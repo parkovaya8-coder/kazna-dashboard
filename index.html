@@ -287,6 +287,31 @@
   .feed-time { font-size:11px; color:var(--text-dim); margin-top:2px; }
   .feed-amount { font-size:13px; font-weight:600; text-align:right; white-space:nowrap; }
 
+  /* QC Panel */
+  .qc-panel {
+    display:flex; gap:12px; margin-bottom:28px; flex-wrap:wrap;
+  }
+  .qc-card {
+    flex:1; min-width:200px; background:var(--bg-card); border:1px solid var(--border);
+    border-radius:14px; padding:16px 20px; display:flex; align-items:center; gap:14px;
+  }
+  .qc-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; }
+  .qc-info { flex:1; }
+  .qc-info-title { font-size:13px; font-weight:600; }
+  .qc-info-desc { font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  /* Debt formula bar */
+  .formula-bar {
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--bg); border-radius:10px; padding:10px 16px;
+    margin-top:14px; font-size:13px; color:var(--text-muted); flex-wrap:wrap;
+    position:relative;
+  }
+  .formula-item { text-align:center; }
+  .formula-val { font-size:16px; font-weight:700; }
+  .formula-label { font-size:9px; text-transform:uppercase; letter-spacing:0.5px; }
+  .formula-op { font-size:18px; font-weight:300; color:var(--text-dim); }
+
   /* Animated number */
   @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   .animate-in { animation: fadeUp 0.4s ease-out; }
@@ -327,6 +352,11 @@
 
   <!-- Hero Banner -->
   <div class="hero-banner animate-in" id="heroBanner">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- QC Panel -->
+  <div class="qc-panel animate-in" id="qcPanel">
     <!-- filled by JS -->
   </div>
 
@@ -918,6 +948,15 @@ function renderHero() {
         <div class="hero-fee-value" style="color:var(--green)">${netRate}%</div>
       </div>
     </div>
+    <div class="formula-bar">
+      <div class="formula-item"><div class="formula-val" style="color:var(--blue)">${fmt(totalNet)}</div><div class="formula-label">Нетто</div></div>
+      <div class="formula-op">−</div>
+      <div class="formula-item"><div class="formula-val" style="color:var(--orange)">${fmt(own.total_owner_expenses)}</div><div class="formula-label">Опер. витрати</div></div>
+      <div class="formula-op">−</div>
+      <div class="formula-item"><div class="formula-val" style="color:var(--purple)">${fmt(totalPaid)}</div><div class="formula-label">Виплачено</div></div>
+      <div class="formula-op">=</div>
+      <div class="formula-item"><div class="formula-val" style="color:${own.balance_due >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(own.balance_due)}</div><div class="formula-label">Борг</div></div>
+    </div>
   `;
 }
 
@@ -962,9 +1001,92 @@ function renderFeed() {
   }).join('');
 }
 
+// ===================== QC PANEL =====================
+function renderQC() {
+  // Simulate QC checks from 21_qc_engine.js logic
+  const issues = [];
+
+  // QC-101: Owner overpayment (balance_due < 0)
+  DATA.owner_balances.forEach(o => {
+    if (o.balance_due < 0) {
+      issues.push({ code:'QC-101', severity:'WARNING', msg: `Переплата ${o.owner_name}: ${fmt(Math.abs(o.balance_due))} UAH` });
+    }
+  });
+
+  // QC-102: Contour overspend (balance < 0)
+  DATA.contour_balances.forEach(c => {
+    if (c.balance < -100) {
+      issues.push({ code:'QC-102', severity:'WARNING', msg: `Дефіцит контуру ${c.contour_name}: ${fmt(Math.abs(c.balance))} UAH` });
+    }
+  });
+
+  // QC-108: Large receipt (>100K)
+  DATA.receipts.forEach(r => {
+    if (r.amount_uah > 100000) {
+      issues.push({ code:'QC-108', severity:'WARNING', msg: `Велике надходження ${r.receipt_id}: ${fmt(r.amount_uah)} UAH` });
+    }
+  });
+
+  // QC-007: Missing FX rate for non-UAH
+  DATA.receipts.forEach(r => {
+    if (r.currency !== 'UAH' && (!r.fx_rate_to_uah || r.fx_rate_to_uah === 0)) {
+      issues.push({ code:'QC-007', severity:'BLOCKER', msg: `Немає курсу для ${r.receipt_id} (${r.currency})` });
+    }
+  });
+
+  // Check for receipts without accruals
+  const accrualReceiptIds = new Set(DATA.accruals.map(a => a.receipt_id));
+  const orphanReceipts = DATA.receipts.filter(r => r.status === 'confirmed' && !accrualReceiptIds.has(r.receipt_id));
+  if (orphanReceipts.length > 0) {
+    issues.push({ code:'QC-103', severity:'WARNING', msg: `${orphanReceipts.length} надходжень без нарахувань` });
+  }
+
+  const blockers = issues.filter(i => i.severity === 'BLOCKER');
+  const warnings = issues.filter(i => i.severity === 'WARNING');
+
+  const cards = [];
+  if (blockers.length === 0 && warnings.length === 0) {
+    cards.push(`
+      <div class="qc-card" style="border-color:rgba(34,197,94,0.3)">
+        <div class="qc-icon" style="background:var(--green-bg);color:var(--green)">✓</div>
+        <div class="qc-info">
+          <div class="qc-info-title" style="color:var(--green)">Всі перевірки пройдені</div>
+          <div class="qc-info-desc">Блокерів та попереджень немає</div>
+        </div>
+      </div>
+    `);
+  } else {
+    if (blockers.length > 0) {
+      cards.push(`
+        <div class="qc-card" style="border-color:rgba(239,68,68,0.3)">
+          <div class="qc-icon" style="background:var(--red-bg);color:var(--red)">${blockers.length}</div>
+          <div class="qc-info">
+            <div class="qc-info-title" style="color:var(--red)">BLOCKER</div>
+            <div class="qc-info-desc">${blockers.map(b => b.msg).join('; ')}</div>
+          </div>
+        </div>
+      `);
+    }
+    if (warnings.length > 0) {
+      cards.push(`
+        <div class="qc-card" style="border-color:rgba(234,179,8,0.3)">
+          <div class="qc-icon" style="background:var(--yellow-bg);color:var(--yellow)">${warnings.length}</div>
+          <div class="qc-info">
+            <div class="qc-info-title" style="color:var(--yellow)">WARNING</div>
+            <div class="qc-info-desc">${warnings.map(w => w.msg).join('; ')}</div>
+          </div>
+        </div>
+      `);
+    }
+  }
+
+  document.getElementById('qcPanel').innerHTML = cards.join('');
+}
+
 // ===================== INIT =====================
 function renderAll() {
   renderHero();
+  renderQC();
   renderKPIs();
   renderFeed();
   renderFlow();

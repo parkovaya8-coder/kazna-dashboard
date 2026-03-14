@@ -1,0 +1,25 @@
+[
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "toolu_01WaebyEpxbcMcEgsG4kw7gs",
+    "session_id": "263a98c4-2237-42db-9004-b5dba5425824",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Bash",
+      "command": "cd \"/Users/vladyasko/Documents/Claude Code/kazna-dashboard\" && gh repo create kazna-dashboard --public --source=. --push --description \"Treasury dashboard for online business owners \u2014 interactive fina",
+      "description": "Create public GitHub repo and push"
+    }
+  },
+  {
+    "tool_name": "Bash",
+    "tool_use_id": "toolu_01DfhKAsPWD6cS6FV9ckuKL6",
+    "session_id": "263a98c4-2237-42db-9004-b5dba5425824",
+    "hook_event_name": "PreToolUse",
+    "tool_summary": {
+      "tool_name": "Bash",
+      "command": "cd \"/Users/vladyasko/Documents/Claude Code/kazna-dashboard\" && vercel --yes --prod 2>&1",
+      "description": "Deploy to Vercel production",
+      "timeout": 60000
+    }
+  }
+]
