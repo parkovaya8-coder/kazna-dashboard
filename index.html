@@ -178,7 +178,7 @@
   .sankey-svg {
     display: block;
     width: 100%;
-    min-width: 900px;
+    min-width: 960px;
   }
 
   /* Sankey node tooltip */
@@ -429,15 +429,23 @@
 
   /* Pulse animation for QC warnings */
   @keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0.3); }
-    50% { box-shadow: 0 0 0 6px rgba(234,179,8,0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0.3); transform: scale(1); }
+    50% { box-shadow: 0 0 0 6px rgba(234,179,8,0); transform: scale(1.02); }
   }
   .qc-card.qc-warning { animation: pulse 2s ease-in-out infinite; }
   @keyframes pulseRed {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
-    50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); transform: scale(1); }
+    50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); transform: scale(1.02); }
   }
   .qc-card.qc-blocker { animation: pulseRed 2s ease-in-out infinite; }
+  /* QC badge number pulse */
+  @keyframes qcBadgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+  .qc-icon-pulse {
+    animation: qcBadgePulse 2s ease-in-out infinite;
+  }
 
   /* Debt formula bar */
   .formula-bar {
@@ -455,6 +463,145 @@
   @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   .animate-in { animation: fadeUp 0.4s ease-out; }
 
+  /* Toast notification system */
+  .toast-container {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .toast {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 20px; font-size: 13px; color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    pointer-events: auto;
+    transform: translateX(120%);
+    animation: toastIn 0.3s ease-out forwards;
+  }
+  .toast.hiding {
+    animation: toastOut 0.3s ease-in forwards;
+  }
+  @keyframes toastIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes toastOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(120%); opacity: 0; }
+  }
+
+  /* Copy balance button */
+  .hero-copy-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: transparent; border: none; cursor: pointer;
+    font-size: 20px; vertical-align: middle; margin-left: 8px;
+    opacity: 0.5; transition: opacity 0.2s, transform 0.2s;
+    position: relative;
+  }
+  .hero-copy-btn:hover { opacity: 1; transform: scale(1.15); }
+
+  /* Modal overlay */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 5000; display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+  .modal-overlay.show { opacity: 1; visibility: visible; }
+  .modal-content {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0; padding: 28px;
+    width: 100%; max-width: 700px; max-height: 70vh; overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.35s ease-out;
+  }
+  .modal-overlay.show .modal-content { transform: translateY(0); }
+  .modal-close {
+    float: right; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    color: var(--text-muted); font-size: 13px; font-family: inherit;
+    transition: background 0.2s;
+  }
+  .modal-close:hover { background: var(--bg-card-hover); }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .modal-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+
+  /* Feed show more button */
+  .feed-show-more {
+    display: block; width: 100%; padding: 10px; margin-top: 8px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--accent-light); font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit; text-align: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .feed-show-more:hover { background: var(--bg-card-hover); border-color: var(--accent); }
+  .feed-items-hidden { display: none; }
+  .feed-items-hidden.expanded { display: block; }
+  .feed-items-hidden.expanding {
+    display: block;
+    animation: slideDown 0.3s ease-out;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; max-height: 0; overflow: hidden; }
+    to { opacity: 1; max-height: 1000px; overflow: hidden; }
+  }
+
+  /* Table row expand */
+  .table-detail-row td {
+    padding: 0 !important; border-bottom: 1px solid rgba(42,46,61,0.5);
+  }
+  .table-detail-panel {
+    background: rgba(99,102,241,0.04); padding: 14px 20px;
+    font-size: 12px; color: var(--text-muted);
+    overflow: hidden;
+    animation: expandPanel 0.3s ease-out;
+  }
+  @keyframes expandPanel {
+    from { max-height: 0; opacity: 0; padding: 0 20px; }
+    to { max-height: 200px; opacity: 1; padding: 14px 20px; }
+  }
+  .table-detail-panel .detail-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;
+  }
+  .detail-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); }
+  .detail-value { font-size: 13px; color: var(--text); font-weight: 500; }
+
+  /* Payout currency group */
+  .payout-group-header {
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-muted); padding: 8px 0 4px; margin-top: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .payout-group-header:first-child { margin-top: 0; }
+  .payout-group-icon { font-size: 14px; }
+
+  /* Empty state for period */
+  .period-empty-state {
+    text-align: center; padding: 48px 20px; color: var(--text-dim);
+  }
+  .period-empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .period-empty-text { font-size: 15px; font-weight: 500; color: var(--text-muted); }
+  .period-empty-sub { font-size: 12px; margin-top: 4px; }
+
+  /* SVG Sankey animated particles */
+  @keyframes particleFlow {
+    0% { offset-distance: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { offset-distance: 100%; opacity: 0; }
+  }
+  @keyframes sankeyNodeGlow {
+    0%, 100% { filter: drop-shadow(0 0 4px var(--glow-color)); }
+    50% { filter: drop-shadow(0 0 14px var(--glow-color)); }
+  }
+  .sankey-node:hover rect {
+    stroke-width: 2.5;
+    filter: url(#glow);
+  }
+  .sankey-node:hover {
+    --glow-color: currentColor;
+    animation: sankeyNodeGlow 1.5s ease-in-out infinite;
+  }
+
   /* Responsive */
   @media (max-width:768px) {
     .container { padding:16px; }
@@ -462,7 +609,7 @@
     .kpi-grid { grid-template-columns:repeat(2, 1fr); }
     .kpi-value { font-size:22px; }
     .header h1 { font-size:20px; }
-    .sankey-svg { min-width: 100%; }
+    .sankey-svg { min-width: 100% !important; }
     .sankey-container { overflow-x: hidden; }
     .hero-value { font-size:32px; }
     .hero-fee-bar { gap:10px; }
@@ -479,6 +626,32 @@
 </style>
 </head>
 <body>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Drill-down modal -->
+<div class="modal-overlay" id="drillModal">
+  <div class="modal-content">
+    <button class="modal-close" id="modalClose">Закрити</button>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-subtitle" id="modalSubtitle"></div>
+    <div class="scroll-wrap">
+      <table class="data-table" id="modalTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Курс</th>
+            <th>Контур</th>
+            <th style="text-align:right">Сума</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody id="modalBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <div class="container">
   <!-- Header -->
@@ -770,6 +943,75 @@ function getSparklineData(type) {
   return Object.keys(byDate).sort().map(d => byDate[d]);
 }
 
+// ===================== TOAST NOTIFICATION SYSTEM =====================
+function showToast(message, duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// ===================== COPY TO CLIPBOARD =====================
+function copyBalance(text) {
+  const clean = text.replace(/[^\d.,\-]/g, '').replace(',', '.');
+  navigator.clipboard.writeText(clean).then(() => {
+    showToast('Скопійовано!');
+  }).catch(() => {
+    showToast('Не вдалося скопіювати');
+  });
+}
+
+// ===================== COUNTING ANIMATION =====================
+function animateNumber(element, targetValue, duration = 1500) {
+  const startTime = performance.now();
+  const startValue = 0;
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easedProgress = easeOut(progress);
+    const currentValue = startValue + (targetValue - startValue) * easedProgress;
+    element.textContent = fmtCurrency(currentValue);
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// ===================== DRILL-DOWN MODAL =====================
+function openDrillDown(dateLabel, dateKey) {
+  const receipts = DATA.receipts.filter(r => r.receipt_date === dateKey);
+  const modal = document.getElementById('drillModal');
+  document.getElementById('modalTitle').textContent = 'Надходження за ' + dateLabel;
+  document.getElementById('modalSubtitle').textContent = receipts.length + ' транзакцій на суму ' + fmtCurrency(receipts.reduce((s,r) => s + r.amount_uah, 0));
+  document.getElementById('modalBody').innerHTML = receipts.map(r => `
+    <tr>
+      <td style="color:var(--text-muted);font-size:11px">${r.receipt_id}</td>
+      <td>${r.course_name}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${r.contour_name}</td>
+      <td class="amount" style="color:var(--green)">${fmt(r.amount_uah)}</td>
+      <td><span class="status status-${r.status}">${r.status}</span></td>
+    </tr>
+  `).join('');
+  modal.classList.add('show');
+}
+
+function closeDrillDown() {
+  document.getElementById('drillModal').classList.remove('show');
+}
+
+document.getElementById('modalClose').addEventListener('click', closeDrillDown);
+document.getElementById('drillModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeDrillDown();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrillDown();
+});
+
 // ===================== MULTI-OWNER URL PARAM =====================
 const urlParams = new URLSearchParams(window.location.search);
 const OWNER_ID = urlParams.get('owner') || 'OWN-002';
@@ -850,8 +1092,8 @@ function renderSankey() {
   const svcPct = (totalServiceFees / totalReceipts * 100).toFixed(1);
   const paidPct = (totalPaid / totalReceipts * 100).toFixed(1);
 
-  // Detect mobile
-  const isMobile = window.innerWidth < 768;
+  // Detect mobile (horizontal on >900px, vertical on mobile)
+  const isMobile = window.innerWidth < 900;
 
   if (isMobile) {
     renderSankeyVertical(totalReceipts, afterWfp, afterTax, afterService, totalPaid, totalFees, totalTaxes, totalServiceFees, wfpPct, taxPct, svcPct, paidPct);
@@ -861,39 +1103,41 @@ function renderSankey() {
 }
 
 function renderSankeyHorizontal(totalReceipts, afterWfp, afterTax, afterService, totalPaid, totalFees, totalTaxes, totalServiceFees, wfpPct, taxPct, svcPct, paidPct) {
-  const W = 960;
-  const H = 280;
+  const W = 1060;
+  const H = 300;
   const maxWidth = 60;
   const scale = maxWidth / totalReceipts;
 
-  // Node positions (x, y)
   const nodes = [
-    { x: 40, y: 100, label: 'WayForPay', amount: totalReceipts, icon: '\ud83d\udcb3', color: '#6366f1' },
-    { x: 220, y: 100, label: '\u0424\u041e\u041f \u041f\u043e\u043b\u043e\u0437\u043e\u0432\u0441\u044c\u043a\u0438\u0439', amount: afterWfp, icon: '\ud83c\udfe2', color: '#3b82f6' },
-    { x: 400, y: 100, label: '\u0424\u041e\u041f \u041b\u0443\u043a\u2019\u044f\u043d\u0435\u043d\u043a\u043e', amount: afterTax, icon: '\ud83c\udfe2', color: '#8b5cf6' },
-    { x: 580, y: 100, label: '\u041e\u0441\u043e\u0431\u0438\u0441\u0442\u0438\u0439', amount: afterService, icon: '\ud83d\udc64', color: '#06b6d4' },
-    { x: 720, y: 100, label: '\u041a\u0440\u0438\u043f\u0442\u043e', amount: afterService, icon: '\u20bf', color: '#f97316' },
-    { x: 880, y: 100, label: '\u0412\u0438\u043f\u043b\u0430\u0442\u0430', amount: totalPaid, icon: '\u2705', color: '#22c55e' },
+    { x: 60, y: 130, label: 'WayForPay', amount: totalReceipts, icon: '\ud83d\udcb3', color: '#6366f1' },
+    { x: 240, y: 130, label: '\u0424\u041e\u041f \u041f\u043e\u043b\u043e\u0437\u043e\u0432\u0441\u044c\u043a\u0438\u0439', amount: afterWfp, icon: '\ud83c\udfe2', color: '#3b82f6' },
+    { x: 430, y: 130, label: '\u0424\u041e\u041f \u041b\u0443\u043a\u2019\u044f\u043d\u0435\u043d\u043a\u043e', amount: afterTax, icon: '\ud83c\udfe2', color: '#8b5cf6' },
+    { x: 620, y: 130, label: '\u041e\u0441\u043e\u0431\u0438\u0441\u0442\u0438\u0439', amount: afterService, icon: '\ud83d\udc64', color: '#06b6d4' },
+    { x: 800, y: 130, label: '\u041a\u0440\u0438\u043f\u0442\u043e', amount: afterService, icon: '\u20bf', color: '#f97316' },
+    { x: 980, y: 130, label: '\u0412\u0438\u043f\u043b\u0430\u0442\u0430', amount: totalPaid, icon: '\u2705', color: '#22c55e' },
   ];
 
-  // Build SVG
   let svg = `<svg class="sankey-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   svg += `<defs>`;
 
-  // Gradients for flows
+  // Flow gradients with green-to-fading effect
   for (let i = 0; i < nodes.length - 1; i++) {
+    const startOpacity = (0.5 - i * 0.06).toFixed(2);
+    const endOpacity = (0.45 - i * 0.06).toFixed(2);
     svg += `<linearGradient id="flowGrad${i}" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0%" stop-color="${nodes[i].color}" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="${nodes[i+1].color}" stop-opacity="0.4"/>
+      <stop offset="0%" stop-color="${nodes[i].color}" stop-opacity="${startOpacity}"/>
+      <stop offset="100%" stop-color="${nodes[i+1].color}" stop-opacity="${endOpacity}"/>
     </linearGradient>`;
   }
 
   // Glow filter
-  svg += `<filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/>
+  svg += `<filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  // Particle glow
+  svg += `<filter id="particleGlow"><feGaussianBlur stdDeviation="2" result="blur"/>
     <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
   svg += `</defs>`;
 
-  // Draw flow paths between nodes
   const losses = [
     { amount: totalFees, pct: wfpPct, label: 'WFP ' + wfpPct + '%' },
     { amount: totalTaxes, pct: taxPct, label: '\u041f\u043e\u0434\u0430\u0442\u043a\u0438 ' + taxPct + '%' },
@@ -904,59 +1148,76 @@ function renderSankeyHorizontal(totalReceipts, afterWfp, afterTax, afterService,
 
   const flowAmounts = [totalReceipts, afterWfp, afterTax, afterService, afterService];
 
+  // Draw flow paths and particles
   for (let i = 0; i < nodes.length - 1; i++) {
     const n1 = nodes[i];
     const n2 = nodes[i+1];
-    const flowW = Math.max(flowAmounts[i] * scale, 4);
-    const cx1 = n1.x + 40;
+    const flowW = Math.max(flowAmounts[i] * scale, 6);
+    const cx1 = n1.x + 50;
     const cx2 = n2.x - 10;
     const midX = (cx1 + cx2) / 2;
+    const pathId = `flowPath${i}`;
 
-    // Main flow path
-    svg += `<path d="M${cx1},${n1.y} C${midX},${n1.y} ${midX},${n2.y} ${cx2},${n2.y}"
-      fill="none" stroke="url(#flowGrad${i})" stroke-width="${flowW}"
+    const pathD = `M${cx1},${n1.y} C${midX},${n1.y} ${midX},${n2.y} ${cx2},${n2.y}`;
+
+    // Main flow band
+    svg += `<path d="${pathD}" fill="none" stroke="url(#flowGrad${i})" stroke-width="${flowW}"
       stroke-linecap="round" opacity="0.6"/>`;
 
-    // Animated particles
-    svg += `<path d="M${cx1},${n1.y} C${midX},${n1.y} ${midX},${n2.y} ${cx2},${n2.y}"
-      fill="none" stroke="${nodes[i].color}" stroke-width="2"
-      stroke-dasharray="4 20" stroke-linecap="round" opacity="0.8"
-      style="animation: flowParticles 1.5s linear infinite;"/>`;
+    // Stroke-dasharray animated line (flowing dashes)
+    svg += `<path d="${pathD}" fill="none" stroke="${nodes[i].color}" stroke-width="1.5"
+      stroke-dasharray="6 18" stroke-linecap="round" opacity="0.7">
+      <animate attributeName="stroke-dashoffset" from="24" to="0" dur="1.2s" repeatCount="indefinite"/>
+    </path>`;
 
-    // Loss indicator
+    // Define path for particle motion
+    svg += `<path id="${pathId}" d="${pathD}" fill="none" stroke="none"/>`;
+
+    // Animated circle particles moving along the path
+    const particleCount = 3;
+    for (let p = 0; p < particleCount; p++) {
+      const delay = (p * (1.8 / particleCount)).toFixed(2);
+      const radius = 3 - i * 0.3;
+      svg += `<circle r="${Math.max(radius, 1.5)}" fill="${nodes[i].color}" filter="url(#particleGlow)" opacity="0.9">
+        <animateMotion dur="1.8s" begin="${delay}s" repeatCount="indefinite" rotate="auto">
+          <mpath href="#${pathId}"/>
+        </animateMotion>
+      </circle>`;
+    }
+
+    // Loss indicator above arrow
     if (losses[i].amount > 0) {
       const lossX = (cx1 + cx2) / 2;
-      const lossY = n1.y - flowW/2 - 20;
+      const lossY = n1.y - flowW/2 - 24;
       const lossH = Math.max(losses[i].amount * scale * 0.5, 2);
 
-      // Loss branch going up
       svg += `<path d="M${lossX},${n1.y - flowW/2} L${lossX},${lossY}"
-        fill="none" stroke="var(--red)" stroke-width="${lossH}"
-        stroke-linecap="round" opacity="0.4"/>`;
-      svg += `<text x="${lossX}" y="${lossY - 8}" text-anchor="middle"
-        fill="var(--red)" font-size="9" font-weight="600" font-family="Inter,sans-serif"
+        fill="none" stroke="#ef4444" stroke-width="${lossH}"
+        stroke-linecap="round" opacity="0.35"/>`;
+      svg += `<text x="${lossX}" y="${lossY - 10}" text-anchor="middle"
+        fill="#ef4444" font-size="9" font-weight="600" font-family="Inter,sans-serif"
         opacity="0.9">\u2212${losses[i].label}</text>`;
     }
   }
 
   // Draw nodes
   nodes.forEach((n, i) => {
-    const nodeW = 80;
-    const nodeH = 70;
+    const nodeW = 84;
+    const nodeH = 74;
     const rx = n.x - nodeW/2 + 20;
     const ry = n.y - nodeH/2;
 
     svg += `<g class="sankey-node" data-idx="${i}" style="cursor:pointer">
-      <rect x="${rx}" y="${ry}" width="${nodeW}" height="${nodeH}" rx="12"
+      <rect x="${rx}" y="${ry}" width="${nodeW}" height="${nodeH}" rx="14"
         fill="var(--bg)" stroke="${n.color}" stroke-width="1.5"
-        filter="url(#glow)" opacity="0.9"/>
+        filter="url(#glow)" opacity="0.95"/>
       <text x="${rx + nodeW/2}" y="${ry + 22}" text-anchor="middle"
-        font-size="16" fill="${n.color}">${n.icon}</text>
+        font-size="17" fill="${n.color}">${n.icon}</text>
       <text x="${rx + nodeW/2}" y="${ry + 38}" text-anchor="middle"
         font-size="9" font-weight="600" fill="var(--text)" font-family="Inter,sans-serif">${n.label}</text>
       <text x="${rx + nodeW/2}" y="${ry + 52}" text-anchor="middle"
-        font-size="9" font-weight="700" fill="${n.color}" font-family="Inter,sans-serif">${fmt(n.amount)}</text>
-      <text x="${rx + nodeW/2}" y="${ry + 63}" text-anchor="middle"
+        font-size="10" font-weight="700" fill="${n.color}" font-family="Inter,sans-serif">${fmt(n.amount)}</text>
+      <text x="${rx + nodeW/2}" y="${ry + 64}" text-anchor="middle"
         font-size="7" fill="var(--text-dim)" font-family="Inter,sans-serif">UAH</text>
     </g>`;
   });
@@ -965,7 +1226,7 @@ function renderSankeyHorizontal(totalReceipts, afterWfp, afterTax, afterService,
   document.getElementById('sankeyContainer').innerHTML = svg +
     '<div class="sankey-tooltip" id="sankeyTooltip"></div>';
 
-  // Add hover tooltips
+  // Hover tooltips
   const tooltip = document.getElementById('sankeyTooltip');
   document.querySelectorAll('.sankey-node').forEach(node => {
     const idx = parseInt(node.dataset.idx);
@@ -974,7 +1235,7 @@ function renderSankeyHorizontal(totalReceipts, afterWfp, afterTax, afterService,
       const pct = (n.amount / totalReceipts * 100).toFixed(1);
       tooltip.innerHTML = `<div class="tt-title">${n.label}</div>
         <div class="tt-amount">${fmt(n.amount)} UAH</div>
-        <div class="tt-pct">${pct}% від початкової суми</div>`;
+        <div class="tt-pct">${pct}% \u0432\u0456\u0434 \u043f\u043e\u0447\u0430\u0442\u043a\u043e\u0432\u043e\u0457 \u0441\u0443\u043c\u0438</div>`;
       tooltip.classList.add('show');
     });
     node.addEventListener('mousemove', (e) => {
@@ -990,17 +1251,17 @@ function renderSankeyHorizontal(totalReceipts, afterWfp, afterTax, afterService,
 
 function renderSankeyVertical(totalReceipts, afterWfp, afterTax, afterService, totalPaid, totalFees, totalTaxes, totalServiceFees, wfpPct, taxPct, svcPct, paidPct) {
   const W = 300;
-  const H = 600;
+  const H = 620;
   const maxWidth = 50;
   const scale = maxWidth / totalReceipts;
 
   const nodes = [
-    { x: 150, y: 40, label: 'WayForPay', amount: totalReceipts, icon: '\ud83d\udcb3', color: '#6366f1' },
-    { x: 150, y: 140, label: '\u0424\u041e\u041f \u041f\u043e\u043b\u043e\u0437.', amount: afterWfp, icon: '\ud83c\udfe2', color: '#3b82f6' },
-    { x: 150, y: 240, label: '\u0424\u041e\u041f \u041b\u0443\u043a\u2019\u044f\u043d.', amount: afterTax, icon: '\ud83c\udfe2', color: '#8b5cf6' },
-    { x: 150, y: 340, label: '\u041e\u0441\u043e\u0431\u0438\u0441\u0442\u0438\u0439', amount: afterService, icon: '\ud83d\udc64', color: '#06b6d4' },
-    { x: 150, y: 440, label: '\u041a\u0440\u0438\u043f\u0442\u043e', amount: afterService, icon: '\u20bf', color: '#f97316' },
-    { x: 150, y: 540, label: '\u0412\u0438\u043f\u043b\u0430\u0442\u0430', amount: totalPaid, icon: '\u2705', color: '#22c55e' },
+    { x: 150, y: 45, label: 'WayForPay', amount: totalReceipts, icon: '\ud83d\udcb3', color: '#6366f1' },
+    { x: 150, y: 150, label: '\u0424\u041e\u041f \u041f\u043e\u043b\u043e\u0437.', amount: afterWfp, icon: '\ud83c\udfe2', color: '#3b82f6' },
+    { x: 150, y: 255, label: '\u0424\u041e\u041f \u041b\u0443\u043a\u2019\u044f\u043d.', amount: afterTax, icon: '\ud83c\udfe2', color: '#8b5cf6' },
+    { x: 150, y: 360, label: '\u041e\u0441\u043e\u0431\u0438\u0441\u0442\u0438\u0439', amount: afterService, icon: '\ud83d\udc64', color: '#06b6d4' },
+    { x: 150, y: 465, label: '\u041a\u0440\u0438\u043f\u0442\u043e', amount: afterService, icon: '\u20bf', color: '#f97316' },
+    { x: 150, y: 570, label: '\u0412\u0438\u043f\u043b\u0430\u0442\u0430', amount: totalPaid, icon: '\u2705', color: '#22c55e' },
   ];
 
   let svg = `<svg class="sankey-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
@@ -1008,36 +1269,66 @@ function renderSankeyVertical(totalReceipts, afterWfp, afterTax, afterService, t
   for (let i = 0; i < nodes.length - 1; i++) {
     svg += `<linearGradient id="flowGradV${i}" x1="0" x2="0" y1="0" y2="1">
       <stop offset="0%" stop-color="${nodes[i].color}" stop-opacity="0.4"/>
-      <stop offset="100%" stop-color="${nodes[i+1].color}" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="${nodes[i+1].color}" stop-opacity="0.35"/>
     </linearGradient>`;
   }
   svg += `<filter id="glowV"><feGaussianBlur stdDeviation="3" result="blur"/>
     <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  svg += `<filter id="particleGlowV"><feGaussianBlur stdDeviation="2" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
   svg += `</defs>`;
 
   const flowAmounts = [totalReceipts, afterWfp, afterTax, afterService, afterService];
+  const losses = [
+    { label: 'WFP ' + wfpPct + '%', amount: totalFees },
+    { label: '\u041f\u043e\u0434. ' + taxPct + '%', amount: totalTaxes },
+    { label: '\u0421\u0435\u0440\u0432. ' + svcPct + '%', amount: totalServiceFees },
+    { label: '', amount: 0 },
+    { label: '', amount: 0 },
+  ];
 
   for (let i = 0; i < nodes.length - 1; i++) {
     const n1 = nodes[i];
     const n2 = nodes[i+1];
-    const flowW = Math.max(flowAmounts[i] * scale, 4);
+    const flowW = Math.max(flowAmounts[i] * scale, 5);
+    const pathId = `flowPathV${i}`;
+    const midY = (n1.y + 25 + n2.y - 25) / 2;
+    const pathD = `M${n1.x},${n1.y+25} C${n1.x},${midY} ${n2.x},${midY} ${n2.x},${n2.y-25}`;
 
-    svg += `<path d="M${n1.x},${n1.y+25} L${n2.x},${n2.y-25}"
-      fill="none" stroke="url(#flowGradV${i})" stroke-width="${flowW}"
+    svg += `<path d="${pathD}" fill="none" stroke="url(#flowGradV${i})" stroke-width="${flowW}"
       stroke-linecap="round" opacity="0.5"/>`;
-    svg += `<path d="M${n1.x},${n1.y+25} L${n2.x},${n2.y-25}"
-      fill="none" stroke="${nodes[i].color}" stroke-width="2"
-      stroke-dasharray="4 20" stroke-linecap="round" opacity="0.8"
-      style="animation: flowParticles 1.5s linear infinite;"/>`;
+    svg += `<path d="${pathD}" fill="none" stroke="${nodes[i].color}" stroke-width="1.5"
+      stroke-dasharray="5 16" stroke-linecap="round" opacity="0.7">
+      <animate attributeName="stroke-dashoffset" from="21" to="0" dur="1.2s" repeatCount="indefinite"/>
+    </path>`;
+    svg += `<path id="${pathId}" d="${pathD}" fill="none" stroke="none"/>`;
+
+    // Animated particles
+    for (let p = 0; p < 2; p++) {
+      const delay = (p * 0.9).toFixed(2);
+      svg += `<circle r="2.5" fill="${nodes[i].color}" filter="url(#particleGlowV)" opacity="0.9">
+        <animateMotion dur="1.8s" begin="${delay}s" repeatCount="indefinite">
+          <mpath href="#${pathId}"/>
+        </animateMotion>
+      </circle>`;
+    }
+
+    // Loss labels
+    if (losses[i].amount > 0) {
+      const lx = n1.x + flowW/2 + 8;
+      const ly = (n1.y + 25 + n2.y - 25) / 2;
+      svg += `<text x="${lx}" y="${ly}" font-size="8" font-weight="600" fill="#ef4444"
+        font-family="Inter,sans-serif" opacity="0.85">\u2212${losses[i].label}</text>`;
+    }
   }
 
   nodes.forEach((n, i) => {
-    svg += `<g>
-      <rect x="${n.x-50}" y="${n.y-20}" width="100" height="44" rx="10"
+    svg += `<g class="sankey-node" data-idx="${i}" style="cursor:pointer">
+      <rect x="${n.x-54}" y="${n.y-22}" width="108" height="46" rx="12"
         fill="var(--bg)" stroke="${n.color}" stroke-width="1.5" filter="url(#glowV)"/>
-      <text x="${n.x-30}" y="${n.y+5}" font-size="14">${n.icon}</text>
-      <text x="${n.x-14}" y="${n.y-3}" font-size="8" font-weight="600" fill="var(--text)" font-family="Inter,sans-serif">${n.label}</text>
-      <text x="${n.x-14}" y="${n.y+12}" font-size="9" font-weight="700" fill="${n.color}" font-family="Inter,sans-serif">${fmt(n.amount)}</text>
+      <text x="${n.x-32}" y="${n.y+5}" font-size="14">${n.icon}</text>
+      <text x="${n.x-14}" y="${n.y-5}" font-size="8" font-weight="600" fill="var(--text)" font-family="Inter,sans-serif">${n.label}</text>
+      <text x="${n.x-14}" y="${n.y+12}" font-size="9" font-weight="700" fill="${n.color}" font-family="Inter,sans-serif">${fmt(n.amount)} UAH</text>
     </g>`;
   });
 
@@ -1140,7 +1431,7 @@ function renderHero() {
 
   document.getElementById('heroBanner').innerHTML = `
     <div class="hero-label">\u0422\u043e\u0431\u0456 \u043f\u0440\u0438\u0447\u0438\u0442\u0430\u0454\u0442\u044c\u0441\u044f</div>
-    <div class="hero-value">${fmtCurrency(own.balance_due)}</div>
+    <div class="hero-value"><span id="heroNumber">${fmtCurrency(own.balance_due)}</span><button class="hero-copy-btn" onclick="copyBalance('${own.balance_due}')" title="Копіювати суму">\ud83d\udccb</button></div>
     <div class="hero-sub">\u0417 \u043a\u043e\u0436\u043d\u043e\u0457 \u20b41 \u0434\u043e \u0442\u0435\u0431\u0435 \u0434\u043e\u0445\u043e\u0434\u0438\u0442\u044c <strong style="color:var(--green)">\u20b4${(totalNet/totalGross).toFixed(2)}</strong> (${netRate}%) \u00b7 \u0423\u0442\u0440\u0438\u043c\u0430\u043d\u043e ${effectiveRate}%</div>
     <div class="hero-fee-bar">
       <div class="hero-fee-item">
@@ -1197,12 +1488,13 @@ function renderFeed() {
   const colorMap = { receipt: 'var(--green)', payout: 'var(--purple)', internal: 'var(--blue)' };
   const signMap = { receipt: '+', payout: '-', internal: '\u2194' };
 
-  document.getElementById('feedList').innerHTML = recent.map(e => {
+  const FEED_LIMIT = 5;
+  const feedHtml = recent.map((e, idx) => {
     const dt = new Date(e.date);
     const timeStr = dt.toLocaleDateString('uk-UA', { day:'numeric', month:'short' });
     const color = colorMap[e.type];
     const sign = signMap[e.type];
-    return `
+    const item = `
       <div class="feed-item">
         <div class="feed-dot" style="background:${color}"></div>
         <div class="feed-content">
@@ -1212,7 +1504,32 @@ function renderFeed() {
         <div class="feed-amount" style="color:${color}">${sign}${fmt(e.amount)} UAH</div>
       </div>
     `;
-  }).join('');
+    return item;
+  });
+
+  const visibleItems = feedHtml.slice(0, FEED_LIMIT).join('');
+  const hiddenItems = feedHtml.slice(FEED_LIMIT);
+  const hiddenCount = hiddenItems.length;
+
+  let html = visibleItems;
+  if (hiddenCount > 0) {
+    html += `<div class="feed-items-hidden" id="feedHidden">${hiddenItems.join('')}</div>`;
+    html += `<button class="feed-show-more" id="feedShowMore" onclick="toggleFeed()">Показати ще ${hiddenCount} подій</button>`;
+  }
+  document.getElementById('feedList').innerHTML = html;
+}
+
+function toggleFeed() {
+  const hidden = document.getElementById('feedHidden');
+  const btn = document.getElementById('feedShowMore');
+  if (hidden.classList.contains('expanded')) {
+    hidden.classList.remove('expanded', 'expanding');
+    btn.textContent = 'Показати ще ' + hidden.children.length + ' подій';
+  } else {
+    hidden.classList.add('expanding');
+    setTimeout(() => hidden.classList.add('expanded'), 10);
+    btn.textContent = 'Сховати';
+  }
 }
 
 // ===================== QC PANEL =====================
@@ -1267,7 +1584,7 @@ function renderQC() {
     if (blockers.length > 0) {
       cards.push(`
         <div class="qc-card qc-blocker" style="border-color:rgba(239,68,68,0.3)">
-          <div class="qc-icon" style="background:var(--red-bg);color:var(--red)">${blockers.length}</div>
+          <div class="qc-icon qc-icon-pulse" style="background:var(--red-bg);color:var(--red)">${blockers.length}</div>
           <div class="qc-info">
             <div class="qc-info-title" style="color:var(--red)">BLOCKER</div>
             <div class="qc-info-desc">${blockers.map(b => b.msg).join('; ')}</div>
@@ -1278,7 +1595,7 @@ function renderQC() {
     if (warnings.length > 0) {
       cards.push(`
         <div class="qc-card qc-warning" style="border-color:rgba(234,179,8,0.3)">
-          <div class="qc-icon" style="background:var(--yellow-bg);color:var(--yellow)">${warnings.length}</div>
+          <div class="qc-icon qc-icon-pulse" style="background:var(--yellow-bg);color:var(--yellow)">${warnings.length}</div>
           <div class="qc-info">
             <div class="qc-info-title" style="color:var(--yellow)">WARNING</div>
             <div class="qc-info-desc">${warnings.map(w => w.msg).join('; ')}</div>
@@ -1360,6 +1677,14 @@ function renderReceiptChart() {
         x: { grid: { color: 'rgba(42,46,61,0.5)' }, ticks: { color: '#5a5f73', font: { size: 10 } } },
         y: { grid: { color: 'rgba(42,46,61,0.5)' }, ticks: { color: '#5a5f73', font: { size: 10 }, callback: v => fmt(v) }, position: 'left' },
         y1: { grid: { display:false }, ticks: { color: '#22c55e', font: { size: 10 }, callback: v => fmt(v) }, position: 'right' },
+      },
+      onClick: (event, elements) => {
+        if (elements.length > 0 && elements[0].datasetIndex === 0) {
+          const idx = elements[0].index;
+          const dateKey = labels[idx];
+          const dateLabel = new Date(dateKey).toLocaleDateString('uk-UA', { day:'numeric', month:'long', year:'numeric' });
+          openDrillDown(dateLabel, dateKey);
+        }
       }
     }
   });
@@ -1480,7 +1805,10 @@ function renderContourChart() {
 // ===================== PAYOUTS LIST =====================
 function renderPayouts() {
   const payouts = DATA.payouts.sort((a,b) => b.payout_date.localeCompare(a.payout_date));
-  document.getElementById('payoutList').innerHTML = payouts.map(p => {
+  const uahPayouts = payouts.filter(p => p.currency === 'UAH');
+  const usdtPayouts = payouts.filter(p => p.currency === 'USDT');
+
+  function renderPayoutItem(p) {
     const isCrypto = p.currency === 'USDT';
     const icon = isCrypto ? '\u20bf' : '\ud83d\udcb5';
     const bg = isCrypto ? 'var(--orange-bg)' : 'var(--green-bg)';
@@ -1497,11 +1825,26 @@ function renderPayouts() {
         </div>
         <div>
           <div class="payout-amount">${isCrypto ? fmt(p.amount)+' USDT' : fmt(p.amount_uah)+' UAH'}</div>
-          ${isCrypto ? `<div class="payout-amount-sub">${fmt(p.amount_uah)} UAH</div>` : ''}
+          ${isCrypto ? `<div class="payout-amount-sub">\u2248 ${fmt(p.amount_uah)} UAH</div>` : ''}
         </div>
       </div>
     `;
-  }).join('');
+  }
+
+  let html = '';
+  if (uahPayouts.length > 0) {
+    const totalUAH = uahPayouts.reduce((s,p) => s + p.amount_uah, 0);
+    html += `<div class="payout-group-header"><span class="payout-group-icon">\ud83d\udcb5</span> UAH \u0432\u0438\u043f\u043b\u0430\u0442\u0438 \u2014 ${fmt(totalUAH)} UAH</div>`;
+    html += uahPayouts.map(renderPayoutItem).join('');
+  }
+  if (usdtPayouts.length > 0) {
+    const totalUSDT = usdtPayouts.reduce((s,p) => s + p.amount, 0);
+    const totalUSDTuah = usdtPayouts.reduce((s,p) => s + p.amount_uah, 0);
+    html += `<div class="payout-group-header"><span class="payout-group-icon">\u20bf</span> USDT \u0432\u0438\u043f\u043b\u0430\u0442\u0438 \u2014 ${fmt(totalUSDT)} USDT (\u2248 ${fmt(totalUSDTuah)} UAH)</div>`;
+    html += usdtPayouts.map(renderPayoutItem).join('');
+  }
+
+  document.getElementById('payoutList').innerHTML = html;
 }
 
 // ===================== RECEIPTS TABLE =====================
@@ -1530,15 +1873,28 @@ function renderReceiptsTable() {
   document.getElementById('receiptCount').textContent = receipts.length;
 
   if (receipts.length === 0) {
-    document.getElementById('receiptBody').innerHTML = `<tr><td colspan="7" class="empty-state">\u041d\u0435\u043c\u0430\u0454 \u0434\u0430\u043d\u0438\u0445</td></tr>`;
+    if (currentPeriod === 'day') {
+      document.getElementById('receiptBody').innerHTML = `<tr><td colspan="7">
+        <div class="period-empty-state">
+          <div class="period-empty-icon">\ud83d\udcc5</div>
+          <div class="period-empty-text">\u0421\u044c\u043e\u0433\u043e\u0434\u043d\u0456 \u0449\u0435 \u043d\u0435\u043c\u0430\u0454 \u0442\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0456\u0439</div>
+          <div class="period-empty-sub">\u041d\u043e\u0432\u0456 \u043d\u0430\u0434\u0445\u043e\u0434\u0436\u0435\u043d\u043d\u044f \u0437\u2019\u044f\u0432\u043b\u044f\u0442\u044c\u0441\u044f \u0430\u0432\u0442\u043e\u043c\u0430\u0442\u0438\u0447\u043d\u043e</div>
+        </div>
+      </td></tr>`;
+    } else {
+      document.getElementById('receiptBody').innerHTML = `<tr><td colspan="7" class="empty-state">\u041d\u0435\u043c\u0430\u0454 \u0434\u0430\u043d\u0438\u0445</td></tr>`;
+    }
     return;
   }
 
   document.getElementById('receiptBody').innerHTML = receipts.map(r => {
     const amountClass = r.amount_uah < 0 ? 'amount amount-negative' : 'amount';
     const amountColor = r.amount_uah < 0 ? 'var(--red)' : 'var(--green)';
+    const relatedAccruals = DATA.accruals.filter(a => a.receipt_id === r.receipt_id);
+    const relatedDeductions = DATA.deductions.filter(d => d.receipt_id === r.receipt_id);
+    const totalDeductions = relatedDeductions.reduce((s,d) => s + d.deduction_amount_uah, 0);
     return `
-    <tr>
+    <tr class="receipt-row" style="cursor:pointer" onclick="toggleReceiptDetail(this)">
       <td style="color:var(--text-muted);font-size:11px">${r.receipt_id}</td>
       <td class="date">${new Date(r.receipt_date).toLocaleDateString('uk-UA')}</td>
       <td>${r.course_name}</td>
@@ -1547,7 +1903,28 @@ function renderReceiptsTable() {
       <td class="amount" style="color:var(--red)">${r.wfp_fee_amount ? fmt(r.wfp_fee_amount) : '\u2014'}</td>
       <td><span class="status status-${r.status}">${r.status}</span></td>
     </tr>
+    <tr class="table-detail-row" style="display:none">
+      <td colspan="7">
+        <div class="table-detail-panel">
+          <div class="detail-grid">
+            <div><div class="detail-label">Джерело</div><div class="detail-value">${r.source_system.toUpperCase()}</div></div>
+            <div><div class="detail-label">Валюта</div><div class="detail-value">${r.currency}${r.fx_rate_to_uah !== 1 ? ' (курс: '+r.fx_rate_to_uah+')' : ''}</div></div>
+            <div><div class="detail-label">Канал</div><div class="detail-value">${r.channel_id || '\u2014'}</div></div>
+            <div><div class="detail-label">Нарахувань</div><div class="detail-value">${relatedAccruals.length}</div></div>
+            <div><div class="detail-label">Утримано</div><div class="detail-value" style="color:var(--red)">${totalDeductions > 0 ? fmt(totalDeductions) + ' UAH' : '\u2014'}</div></div>
+            <div><div class="detail-label">WFP на продавці</div><div class="detail-value">${r.wfp_fee_on_seller || '\u2014'}</div></div>
+          </div>
+        </div>
+      </td>
+    </tr>
   `;}).join('');
+}
+
+function toggleReceiptDetail(row) {
+  const detailRow = row.nextElementSibling;
+  if (detailRow && detailRow.classList.contains('table-detail-row')) {
+    detailRow.style.display = detailRow.style.display === 'none' ? '' : 'none';
+  }
 }
 
 // ===================== ACCRUALS TABLE =====================
@@ -1575,8 +1952,9 @@ function renderAccrualsTable() {
   document.getElementById('accrualBody').innerHTML = accruals.map(a => {
     const netClass = a.net_amount_uah < 0 ? 'amount amount-negative' : 'amount';
     const netColor = a.net_amount_uah < 0 ? 'var(--red)' : 'var(--green)';
+    const effRate = a.gross_amount > 0 ? ((a.net_amount_uah / a.gross_amount) * 100).toFixed(1) : '0';
     return `
-    <tr>
+    <tr class="accrual-row" style="cursor:pointer" onclick="toggleAccrualDetail(this)">
       <td style="color:var(--text-muted);font-size:11px">${a.accrual_id}</td>
       <td class="date">${new Date(a.accrual_date).toLocaleDateString('uk-UA')}</td>
       <td class="amount">${fmt(a.gross_amount)}</td>
@@ -1585,7 +1963,28 @@ function renderAccrualsTable() {
       <td class="${netClass}" style="color:${netColor}">${fmt(a.net_amount_uah)}</td>
       <td><span class="status status-${a.status}">${a.status}</span></td>
     </tr>
+    <tr class="table-detail-row" style="display:none">
+      <td colspan="7">
+        <div class="table-detail-panel">
+          <div class="detail-grid">
+            <div><div class="detail-label">Receipt ID</div><div class="detail-value">${a.receipt_id || '\u2014'}</div></div>
+            <div><div class="detail-label">Owner</div><div class="detail-value">${a.owner_id || '\u2014'}</div></div>
+            <div><div class="detail-label">WFP \u043a\u043e\u043c\u0456\u0441\u0456\u044f</div><div class="detail-value" style="color:var(--red)">${fmt(a.total_wfp_fee)} UAH</div></div>
+            <div><div class="detail-label">\u0406\u043d\u0448\u0456 \u043a\u043e\u043c\u0456\u0441\u0456\u0457</div><div class="detail-value" style="color:var(--orange)">${fmt(a.total_fees)} UAH</div></div>
+            <div><div class="detail-label">\u0415\u0444\u0435\u043a\u0442\u0438\u0432\u043d\u0456\u0441\u0442\u044c</div><div class="detail-value" style="color:var(--green)">${effRate}%</div></div>
+            <div><div class="detail-label">\u0421\u0442\u0430\u0442\u0443\u0441</div><div class="detail-value">${a.status}</div></div>
+          </div>
+        </div>
+      </td>
+    </tr>
   `;}).join('');
+}
+
+function toggleAccrualDetail(row) {
+  const detailRow = row.nextElementSibling;
+  if (detailRow && detailRow.classList.contains('table-detail-row')) {
+    detailRow.style.display = detailRow.style.display === 'none' ? '' : 'none';
+  }
 }
 
 // ===================== INIT =====================
@@ -1635,6 +2034,14 @@ initScrollReveal();
 
 // Go!
 renderAll();
+
+// Trigger counting animation on first load
+(function() {
+  const heroEl = document.getElementById('heroNumber');
+  if (heroEl) {
+    animateNumber(heroEl, OWNER.balance_due, 1500);
+  }
+})();
 </script>
 </body>
 </html>
