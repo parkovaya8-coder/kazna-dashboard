@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Казначейство — Прилипкін Антон</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-card-hover: #22263a;
+    --border: #2a2e3d;
+    --text: #e4e7ef;
+    --text-muted: #8b90a0;
+    --text-dim: #5a5f73;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.12);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.12);
+    --yellow: #eab308;
+    --yellow-bg: rgba(234,179,8,0.12);
+    --blue: #3b82f6;
+    --blue-bg: rgba(59,130,246,0.12);
+    --purple: #a855f7;
+    --purple-bg: rgba(168,85,247,0.12);
+    --orange: #f97316;
+    --orange-bg: rgba(249,115,22,0.12);
+    --cyan: #06b6d4;
+    --cyan-bg: rgba(6,182,212,0.12);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 28px; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .header-left { display:flex; align-items:center; gap:16px; }
+  .logo {
+    width:48px; height:48px; border-radius:14px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; font-weight:800; color:#fff;
+  }
+  .header h1 { font-size:24px; font-weight:700; letter-spacing:-0.5px; }
+  .header .subtitle { font-size:13px; color:var(--text-muted); margin-top:2px; }
+
+  .period-selector {
+    display:flex; gap:4px; background:var(--bg-card); border-radius:10px; padding:4px;
+    border: 1px solid var(--border);
+  }
+  .period-btn {
+    padding:8px 16px; border-radius:8px; border:none; cursor:pointer;
+    font-size:13px; font-weight:500; color:var(--text-muted);
+    background:transparent; transition:all 0.2s;
+    font-family:inherit;
+  }
+  .period-btn.active {
+    background:var(--accent); color:#fff; box-shadow:0 2px 8px rgba(99,102,241,0.3);
+  }
+  .period-btn:hover:not(.active) { color:var(--text); background:var(--bg-card-hover); }
+
+  /* KPI Cards */
+  .kpi-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap:16px;
+    margin-bottom:28px;
+  }
+  .kpi-card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    padding:20px 24px;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .kpi-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+  .kpi-label { font-size:12px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+  .kpi-value { font-size:28px; font-weight:700; letter-spacing:-1px; line-height:1.1; }
+  .kpi-sub { font-size:12px; color:var(--text-dim); margin-top:6px; }
+  .kpi-icon {
+    width:36px; height:36px; border-radius:10px; display:flex; align-items:center;
+    justify-content:center; font-size:16px; margin-bottom:12px;
+  }
+  .kpi-sparkline { margin-top:10px; height:32px; }
+  .kpi-sparkline canvas { width:100%; height:32px; display:block; }
+
+  /* Charts grid */
+  .charts-grid {
+    display:grid;
+    grid-template-columns: 2fr 1fr;
+    gap:16px;
+    margin-bottom:28px;
+  }
+  .chart-card {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    padding:24px;
+  }
+  .chart-title {
+    font-size:15px; font-weight:600; margin-bottom:4px;
+  }
+  .chart-subtitle { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
+  .chart-wrapper { position:relative; }
+
+  /* Money Flow */
+  .flow-section {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    padding:28px; margin-bottom:28px;
+  }
+  .flow-title { font-size:18px; font-weight:700; margin-bottom:4px; }
+  .flow-subtitle { font-size:13px; color:var(--text-muted); margin-bottom:24px; }
+
+  .flow-chain {
+    display:flex; align-items:center; gap:0; overflow-x:auto;
+    padding:8px 0;
+  }
+  .flow-node {
+    flex-shrink:0;
+    background:var(--bg); border:1px solid var(--border); border-radius:14px;
+    padding:16px 20px; text-align:center; min-width:140px;
+    position:relative;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  .flow-node:hover { transform:scale(1.05); border-color:var(--accent); }
+  .flow-node-icon { font-size:24px; margin-bottom:8px; }
+  .flow-node-title { font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .flow-node-amount { font-size:14px; font-weight:700; }
+  .flow-node-label { font-size:10px; color:var(--text-dim); margin-top:2px; }
+
+  .flow-arrow {
+    flex-shrink:0; display:flex; align-items:center; flex-direction:column;
+    padding:0 8px; color:var(--text-dim);
+  }
+  .flow-arrow-line { font-size:20px; }
+  .flow-arrow-label { font-size:9px; color:var(--text-dim); white-space:nowrap; }
+
+  /* Deductions breakdown */
+  .breakdown-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px;
+  }
+
+  /* Table */
+  .table-section {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    padding:24px; margin-bottom:28px; overflow:hidden;
+  }
+  .table-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:16px; flex-wrap:wrap; gap:12px;
+  }
+  .table-title { font-size:15px; font-weight:600; }
+  .table-filters { display:flex; gap:8px; flex-wrap:wrap; }
+  .filter-input {
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:8px 12px; color:var(--text); font-size:12px; font-family:inherit;
+    outline:none; transition:border-color 0.2s;
+  }
+  .filter-input:focus { border-color:var(--accent); }
+
+  .data-table { width:100%; border-collapse:collapse; }
+  .data-table th {
+    text-align:left; font-size:11px; font-weight:600; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:0.5px; padding:10px 12px;
+    border-bottom:1px solid var(--border);
+  }
+  .data-table td {
+    padding:12px; font-size:13px; border-bottom:1px solid rgba(42,46,61,0.5);
+  }
+  .data-table tr:hover td { background:rgba(99,102,241,0.04); }
+  .data-table .amount { font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
+  .data-table .date { color:var(--text-muted); font-variant-numeric:tabular-nums; }
+  .data-table .status {
+    font-size:11px; font-weight:500; padding:3px 8px; border-radius:6px;
+    display:inline-block;
+  }
+  .status-confirmed, .status-approved, .status-executed, .status-completed {
+    background:var(--green-bg); color:var(--green);
+  }
+  .status-pending { background:var(--yellow-bg); color:var(--yellow); }
+  .status-paid { background:var(--blue-bg); color:var(--blue); }
+
+  .scroll-wrap { overflow-x:auto; }
+
+  /* Payout cards */
+  .payout-list { display:flex; flex-direction:column; gap:10px; }
+  .payout-item {
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--bg); border-radius:10px; padding:14px 16px;
+    border:1px solid var(--border);
+  }
+  .payout-item-left { display:flex; align-items:center; gap:12px; }
+  .payout-icon {
+    width:32px; height:32px; border-radius:8px; display:flex;
+    align-items:center; justify-content:center; font-size:14px;
+  }
+  .payout-desc { font-size:13px; font-weight:500; }
+  .payout-meta { font-size:11px; color:var(--text-muted); }
+  .payout-amount { font-size:14px; font-weight:700; text-align:right; }
+  .payout-amount-sub { font-size:11px; color:var(--text-muted); }
+
+  /* Footer */
+  .footer {
+    text-align:center; padding:24px 0; color:var(--text-dim); font-size:11px;
+    border-top:1px solid var(--border);
+  }
+
+  /* Responsive */
+  @media (max-width:768px) {
+    .container { padding:16px; }
+    .charts-grid, .breakdown-grid { grid-template-columns:1fr; }
+    .kpi-grid { grid-template-columns:repeat(2, 1fr); }
+    .kpi-value { font-size:22px; }
+    .header h1 { font-size:20px; }
+    .flow-chain { flex-direction:column; }
+    .flow-arrow { transform:rotate(90deg); }
+  }
+
+  /* Badge */
+  .badge {
+    font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px;
+    display:inline-block; margin-left:6px;
+  }
+
+  /* Tabs */
+  .tab-row { display:flex; gap:4px; margin-bottom:16px; }
+  .tab-btn {
+    padding:6px 14px; border-radius:8px; border:1px solid var(--border);
+    cursor:pointer; font-size:12px; font-weight:500; color:var(--text-muted);
+    background:transparent; font-family:inherit; transition:all 0.2s;
+  }
+  .tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .tab-btn:hover:not(.active) { border-color:var(--text-muted); }
+
+  /* Hero Banner */
+  .hero-banner {
+    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(168,85,247,0.1));
+    border:1px solid rgba(99,102,241,0.3); border-radius:20px;
+    padding:32px 36px; margin-bottom:28px; text-align:center;
+    position:relative; overflow:hidden;
+  }
+  .hero-banner::before {
+    content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background:radial-gradient(circle at 30% 50%, rgba(99,102,241,0.08) 0%, transparent 60%);
+  }
+  .hero-label { font-size:13px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; position:relative; }
+  .hero-value { font-size:48px; font-weight:800; letter-spacing:-2px; color:var(--accent-light); position:relative; line-height:1.1; }
+  .hero-sub { font-size:14px; color:var(--text-muted); margin-top:8px; position:relative; }
+  .hero-fee-bar { display:flex; justify-content:center; gap:24px; margin-top:16px; position:relative; flex-wrap:wrap; }
+  .hero-fee-item { text-align:center; }
+  .hero-fee-label { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; }
+  .hero-fee-value { font-size:16px; font-weight:700; margin-top:2px; }
+
+  /* Activity Feed */
+  .feed-section {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:16px;
+    padding:24px; margin-bottom:28px;
+  }
+  .feed-list { display:flex; flex-direction:column; gap:0; }
+  .feed-item {
+    display:flex; align-items:flex-start; gap:12px; padding:12px 0;
+    border-bottom:1px solid rgba(42,46,61,0.5);
+  }
+  .feed-item:last-child { border-bottom:none; }
+  .feed-dot {
+    width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0;
+  }
+  .feed-content { flex:1; }
+  .feed-text { font-size:13px; }
+  .feed-time { font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .feed-amount { font-size:13px; font-weight:600; text-align:right; white-space:nowrap; }
+
+  /* Animated number */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .animate-in { animation: fadeUp 0.4s ease-out; }
+
+  @media (max-width:768px) {
+    .hero-value { font-size:32px; }
+    .hero-fee-bar { gap:10px; }
+    .hero-banner { padding:20px 16px; }
+    .feed-item { flex-wrap:wrap; }
+    .feed-amount { width:100%; text-align:left; padding-left:20px; margin-top:2px; }
+    .header { flex-direction:column; align-items:flex-start; }
+    .period-selector { width:100%; justify-content:stretch; }
+    .period-btn { flex:1; text-align:center; padding:10px 8px; }
+    .payout-item { flex-direction:column; align-items:flex-start; gap:8px; }
+    .table-header { flex-direction:column; align-items:flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header animate-in">
+    <div class="header-left">
+      <div class="logo">K</div>
+      <div>
+        <h1>Казначейство</h1>
+        <div class="subtitle">Прилипкін Антон (OWN-002) &middot; AI Ковчег</div>
+      </div>
+    </div>
+    <div class="period-selector">
+      <button class="period-btn" data-period="day">День</button>
+      <button class="period-btn" data-period="week">Тиждень</button>
+      <button class="period-btn active" data-period="month">Місяць</button>
+      <button class="period-btn" data-period="all">Все</button>
+    </div>
+  </div>
+
+  <!-- Hero Banner -->
+  <div class="hero-banner animate-in" id="heroBanner">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid animate-in" id="kpiGrid">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Activity Feed -->
+  <div class="feed-section animate-in">
+    <div class="chart-title">Що нового</div>
+    <div class="chart-subtitle">Останні події за 7 днів</div>
+    <div class="feed-list" id="feedList">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- Money Flow Chain -->
+  <div class="flow-section animate-in">
+    <div class="flow-title">Рух коштів</div>
+    <div class="flow-subtitle">Ланцюг руху грошей від надходження до виплати</div>
+    <div class="flow-chain" id="flowChain">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid animate-in">
+    <div class="chart-card">
+      <div class="chart-title">Надходження</div>
+      <div class="chart-subtitle" id="chartSubtitle">Динаміка за обраний період</div>
+      <div class="chart-wrapper" style="height:300px">
+        <canvas id="receiptChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Утримання</div>
+      <div class="chart-subtitle">Структура відрахувань</div>
+      <div class="chart-wrapper" style="height:300px">
+        <canvas id="deductionChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payouts + Accruals -->
+  <div class="breakdown-grid animate-in">
+    <div class="chart-card">
+      <div class="chart-title">Виплати</div>
+      <div class="chart-subtitle">Всі виплати власнику</div>
+      <div class="payout-list" id="payoutList">
+        <!-- filled by JS -->
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Баланси контурів</div>
+      <div class="chart-subtitle">Стан контурів системи</div>
+      <div class="chart-wrapper" style="height:300px">
+        <canvas id="contourChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipts Table -->
+  <div class="table-section animate-in">
+    <div class="table-header">
+      <div class="table-title">Надходження <span class="badge" style="background:var(--green-bg);color:var(--green)" id="receiptCount">33</span></div>
+      <div class="table-filters">
+        <input type="date" class="filter-input" id="dateFrom" placeholder="Від">
+        <input type="date" class="filter-input" id="dateTo" placeholder="До">
+      </div>
+    </div>
+    <div class="scroll-wrap">
+      <table class="data-table" id="receiptTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Дата</th>
+            <th>Курс</th>
+            <th>Контур</th>
+            <th style="text-align:right">Сума</th>
+            <th style="text-align:right">Комісія WFP</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody id="receiptBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Accruals Table -->
+  <div class="table-section animate-in">
+    <div class="table-header">
+      <div class="table-title">Нарахування <span class="badge" style="background:var(--blue-bg);color:var(--blue)" id="accrualCount">36</span></div>
+    </div>
+    <div class="scroll-wrap">
+      <table class="data-table" id="accrualTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Дата</th>
+            <th style="text-align:right">Брутто</th>
+            <th style="text-align:right">Комісії</th>
+            <th style="text-align:right">Утримання</th>
+            <th style="text-align:right">Нетто</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody id="accrualBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Казначейство &copy; 2026 &middot; Дані оновлені станом на 05.03.2026 &middot; Побудовано за допомогою Claude Code
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const DATA = {"receipts": [{"receipt_id": "RCP-00048", "receipt_date": "2026-01-25", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697624a575444", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19485.0, "fx_rate_to_uah": 1.0, "amount_uah": 19485, "wfp_fee_amount": 1461.38, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00057", "receipt_date": "2026-01-29", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697b5773d3e84", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 2150.0, "fx_rate_to_uah": 1.0, "amount_uah": 2150, "wfp_fee_amount": 43.0, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00058", "receipt_date": "2026-01-29", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697b59ee7b8a1", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 2150.0, "fx_rate_to_uah": 1.0, "amount_uah": 2150, "wfp_fee_amount": 43.0, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00059", "receipt_date": "2026-01-29", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697b663222a33", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 40850.0, "fx_rate_to_uah": 1.0, "amount_uah": 40850, "wfp_fee_amount": 4534.35, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00060", "receipt_date": "2026-01-30", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697c3378f0b85", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 2150.0, "fx_rate_to_uah": 1.0, "amount_uah": 2150, "wfp_fee_amount": 43.0, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00063", "receipt_date": "2026-01-30", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697cae1cc1368", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 24999.0, "fx_rate_to_uah": 1.0, "amount_uah": 24999, "wfp_fee_amount": 1549.94, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00064", "receipt_date": "2026-01-30", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697cf93d730c9", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19350.0, "fx_rate_to_uah": 1.0, "amount_uah": 19350, "wfp_fee_amount": 387.0, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00065", "receipt_date": "2026-01-31", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697d42516a317", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 43000.0, "fx_rate_to_uah": 1.0, "amount_uah": 43000, "wfp_fee_amount": 860.0, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00066", "receipt_date": "2026-01-31", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697dd5f2c757e", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19395.0, "fx_rate_to_uah": 1.0, "amount_uah": 19395, "wfp_fee_amount": 387.9, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00072", "receipt_date": "2026-01-31", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697e286779976", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 4310.0, "fx_rate_to_uah": 1.0, "amount_uah": 4310, "wfp_fee_amount": 86.2, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00075", "receipt_date": "2026-02-01", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697f841739b27", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19395.0, "fx_rate_to_uah": 1.0, "amount_uah": 19395, "wfp_fee_amount": 2152.85, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00077", "receipt_date": "2026-02-01", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697fa9a022a14", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19395.0, "fx_rate_to_uah": 1.0, "amount_uah": 19395, "wfp_fee_amount": 2152.85, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00078", "receipt_date": "2026-02-01", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-697fc09ec9210", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19395.0, "fx_rate_to_uah": 1.0, "amount_uah": 19395, "wfp_fee_amount": 387.9, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00081", "receipt_date": "2026-02-02", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-6980403aec1ba", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 43100.0, "fx_rate_to_uah": 1.0, "amount_uah": 43100, "wfp_fee_amount": 4784.1, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00084", "receipt_date": "2026-02-02", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-69809e096c46a", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19395.0, "fx_rate_to_uah": 1.0, "amount_uah": 19395, "wfp_fee_amount": 2152.85, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00086", "receipt_date": "2026-02-03", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-6981bf119f11c", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 21625.0, "fx_rate_to_uah": 1.0, "amount_uah": 21625, "wfp_fee_amount": 432.5, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00087", "receipt_date": "2026-02-05", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-69844240ac5b6", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 14512.3, "fx_rate_to_uah": 1.0, "amount_uah": 14512.3, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "нет"}, {"receipt_id": "RCP-00089", "receipt_date": "2026-02-10", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-698b9a896ce8a", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19462.5, "fx_rate_to_uah": 1.0, "amount_uah": 19462.5, "wfp_fee_amount": 2160.34, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00090", "receipt_date": "2026-02-13", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-698f81568621a", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 8650.0, "fx_rate_to_uah": 1.0, "amount_uah": 8650, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "нет"}, {"receipt_id": "RCP-00091", "receipt_date": "2026-02-18", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-6995ddaf30820", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 15207.5, "fx_rate_to_uah": 1.0, "amount_uah": 15207.5, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "нет"}, {"receipt_id": "RCP-00092", "receipt_date": "2026-02-19", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-6996d06e84870", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 14475.51, "fx_rate_to_uah": 1.0, "amount_uah": 14475.51, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "нет"}, {"receipt_id": "RCP-00094", "receipt_date": "2026-02-24", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-699ded174884f", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 43450.0, "fx_rate_to_uah": 1.0, "amount_uah": 43450, "fx_rate_source": "manual", "status": "confirmed", "wfp_fee_on_seller": "нет"}, {"receipt_id": "RCP-00097", "receipt_date": "2026-02-28", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-69a30785ab9d7", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19485.0, "fx_rate_to_uah": 1.0, "amount_uah": 19485, "wfp_fee_amount": 389.7, "fx_rate_source": "manual", "payer_email": "a.osichka@gmail.com", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00098", "receipt_date": "2026-01-16", "source_system": "bank_statement", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-002", "contour_id": "CTR-001", "contour_name": "Лукьяненко бизнес", "account_id": "ACC-003", "currency": "UAH", "amount": 43670.0, "fx_rate_to_uah": 1.0, "amount_uah": 43670, "fx_rate_source": "manual", "payer_name": "НПО ВОЛЬТЕН", "status": "confirmed"}, {"receipt_id": "RCP-00099", "receipt_date": "2026-01-23", "source_system": "bank_statement", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-002", "contour_id": "CTR-001", "contour_name": "Лукьяненко бизнес", "account_id": "ACC-003", "currency": "UAH", "amount": 43480.0, "fx_rate_to_uah": 1.0, "amount_uah": 43480, "fx_rate_source": "manual", "payer_name": "Пустотай В.В. ФОП", "status": "confirmed"}, {"receipt_id": "RCP-00102", "receipt_date": "2026-02-02", "source_system": "bank_statement", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-003", "contour_id": "CTR-001", "contour_name": "Лукьяненко бизнес", "account_id": "ACC-002", "currency": "EUR", "amount": 280.0, "fx_rate_to_uah": 51.0225, "amount_uah": 14286.3, "fx_rate_source": "nbu", "status": "confirmed"}, {"receipt_id": "RCP-00103", "receipt_date": "2026-02-16", "source_system": "bank_statement", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-003", "contour_id": "CTR-001", "contour_name": "Лукьяненко бизнес", "account_id": "ACC-002", "currency": "EUR", "amount": 280.0, "fx_rate_to_uah": 51.1276, "amount_uah": 14315.728, "fx_rate_source": "nbu", "status": "confirmed"}, {"receipt_id": "RCP-00104", "receipt_date": "2026-02-28", "source_system": "bank_statement", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-003", "contour_id": "CTR-001", "contour_name": "Лукьяненко бизнес", "account_id": "ACC-002", "currency": "EUR", "amount": 280.0, "fx_rate_to_uah": 51.0244, "amount_uah": 14286.832, "fx_rate_source": "nbu", "status": "confirmed"}, {"receipt_id": "RCP-00105", "receipt_date": "2026-03-02", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-69a573ac22315", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 8660.0, "fx_rate_to_uah": 1.0, "amount_uah": 8660, "payer_email": "usova.o92@icloud.com", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00106", "receipt_date": "2026-03-03", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-69a6eebb3bea5", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19575.0, "fx_rate_to_uah": 1.0, "amount_uah": 19575, "wfp_fee_amount": 2172.83, "payer_email": "lex.kushnir@gmail.com", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00107", "receipt_date": "2026-03-04", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-69a7fc4ef1b73", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 21875.0, "fx_rate_to_uah": 1.0, "amount_uah": 21875, "payer_email": "irinapisaguide@gmail.com", "status": "confirmed", "wfp_fee_on_seller": "да"}, {"receipt_id": "RCP-00110", "receipt_date": "2026-03-05", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-69a95f6ad33f9", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 14685.3, "fx_rate_to_uah": 1.0, "amount_uah": 14685.3, "payer_email": "o.tamarli@gmail.com", "status": "confirmed", "wfp_fee_on_seller": "нет"}, {"receipt_id": "RCP-00112", "receipt_date": "2026-03-05", "source_system": "wfp", "source_txn_id": "WFP-BTN-9206219-69a9b134e405c", "course_id": "CRS-002", "course_name": "AI Ковчег", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "channel_id": "CHN-001", "store_id": "STR-001", "contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "account_id": "ACC-006", "currency": "UAH", "amount": 19845.0, "fx_rate_to_uah": 1.0, "amount_uah": 19845, "wfp_fee_amount": 2202.8, "payer_email": "y.bilytska@ideadigital.agency", "status": "confirmed", "wfp_fee_on_seller": "да"}], "accruals": [{"accrual_id": "ACR-00048", "receipt_id": "RCP-00048", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-25", "gross_amount": 19485.0, "gross_currency": "UAH", "total_fees": 180.24, "total_taxes": 0, "total_deductions": 1641.62, "total_service_fee": 180.24, "total_wfp_fee": 0, "net_amount": 17843.38, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 17843.38, "status": "approved"}, {"accrual_id": "ACR-00057", "receipt_id": "RCP-00057", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-29", "gross_amount": 2150.0, "gross_currency": "UAH", "total_fees": 21.07, "total_taxes": 0, "total_deductions": 64.07, "total_service_fee": 21.07, "total_wfp_fee": 0, "net_amount": 2085.93, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 2085.93, "status": "approved"}, {"accrual_id": "ACR-00058", "receipt_id": "RCP-00058", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-29", "gross_amount": 2150.0, "gross_currency": "UAH", "total_fees": 21.07, "total_taxes": 0, "total_deductions": 64.07, "total_service_fee": 21.07, "total_wfp_fee": 0, "net_amount": 2085.93, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 2085.93, "status": "approved"}, {"accrual_id": "ACR-00059", "receipt_id": "RCP-00059", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-29", "gross_amount": 40850.0, "gross_currency": "UAH", "total_fees": 363.16, "total_taxes": 0, "total_deductions": 4897.51, "total_service_fee": 363.16, "total_wfp_fee": 0, "net_amount": 35952.49, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 35952.49, "status": "approved"}, {"accrual_id": "ACR-00060", "receipt_id": "RCP-00060", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-30", "gross_amount": 2150.0, "gross_currency": "UAH", "total_fees": 21.07, "total_taxes": 0, "total_deductions": 64.07, "total_service_fee": 21.07, "total_wfp_fee": 0, "net_amount": 2085.93, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 2085.93, "status": "approved"}, {"accrual_id": "ACR-00063", "receipt_id": "RCP-00063", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-30", "gross_amount": 24999.0, "gross_currency": "UAH", "total_fees": 234.49, "total_taxes": 0, "total_deductions": 1784.43, "total_service_fee": 234.49, "total_wfp_fee": 0, "net_amount": 23214.57, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 23214.57, "status": "approved"}, {"accrual_id": "ACR-00064", "receipt_id": "RCP-00064", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-30", "gross_amount": 19350.0, "gross_currency": "UAH", "total_fees": 189.63, "total_taxes": 0, "total_deductions": 576.63, "total_service_fee": 189.63, "total_wfp_fee": 0, "net_amount": 18773.37, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 18773.37, "status": "approved"}, {"accrual_id": "ACR-00065", "receipt_id": "RCP-00065", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-31", "gross_amount": 43000.0, "gross_currency": "UAH", "total_fees": 421.4, "total_taxes": 0, "total_deductions": 1281.4, "total_service_fee": 421.4, "total_wfp_fee": 0, "net_amount": 41718.6, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 41718.6, "status": "approved"}, {"accrual_id": "ACR-00066", "receipt_id": "RCP-00066", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-31", "gross_amount": 19395.0, "gross_currency": "UAH", "total_fees": 190.07, "total_taxes": 0, "total_deductions": 577.97, "total_service_fee": 190.07, "total_wfp_fee": 0, "net_amount": 18817.03, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 18817.03, "status": "approved"}, {"accrual_id": "ACR-00072", "receipt_id": "RCP-00072", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-31", "gross_amount": 4310.0, "gross_currency": "UAH", "total_fees": 42.24, "total_taxes": 0, "total_deductions": 128.44, "total_service_fee": 42.24, "total_wfp_fee": 0, "net_amount": 4181.56, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 4181.56, "status": "approved"}, {"accrual_id": "ACR-00075", "receipt_id": "RCP-00075", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-01", "gross_amount": 19395.0, "gross_currency": "UAH", "total_fees": 1206.95, "total_taxes": 0, "total_deductions": 3359.8, "total_service_fee": 172.42, "total_wfp_fee": 0, "net_amount": 16035.2, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 16035.2, "status": "approved"}, {"accrual_id": "ACR-00077", "receipt_id": "RCP-00077", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-01", "gross_amount": 19395.0, "gross_currency": "UAH", "total_fees": 1206.95, "total_taxes": 0, "total_deductions": 3359.8, "total_service_fee": 172.42, "total_wfp_fee": 0, "net_amount": 16035.2, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 16035.2, "status": "approved"}, {"accrual_id": "ACR-00078", "receipt_id": "RCP-00078", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-01", "gross_amount": 19395.0, "gross_currency": "UAH", "total_fees": 1330.5, "total_taxes": 0, "total_deductions": 1718.4, "total_service_fee": 190.07, "total_wfp_fee": 0, "net_amount": 17676.6, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 17676.6, "status": "approved"}, {"accrual_id": "ACR-00081", "receipt_id": "RCP-00081", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-02", "gross_amount": 43100.0, "gross_currency": "UAH", "total_fees": 2682.12, "total_taxes": 0, "total_deductions": 7466.22, "total_service_fee": 383.16, "total_wfp_fee": 0, "net_amount": 35633.78, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 35633.78, "status": "approved"}, {"accrual_id": "ACR-00084", "receipt_id": "RCP-00084", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-02", "gross_amount": 19395.0, "gross_currency": "UAH", "total_fees": 1206.95, "total_taxes": 0, "total_deductions": 3359.8, "total_service_fee": 172.42, "total_wfp_fee": 0, "net_amount": 16035.2, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 16035.2, "status": "approved"}, {"accrual_id": "ACR-00086", "receipt_id": "RCP-00086", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-03", "gross_amount": 21625.0, "gross_currency": "UAH", "total_fees": 1483.49, "total_taxes": 0, "total_deductions": 1915.99, "total_service_fee": 211.93, "total_wfp_fee": 0, "net_amount": 19709.01, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 19709.01, "status": "approved"}, {"accrual_id": "ACR-00087", "receipt_id": "RCP-00087", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-05", "gross_amount": 14512.3, "gross_currency": "UAH", "total_fees": 998.44, "total_taxes": 0, "total_deductions": 998.44, "total_service_fee": 145.12, "total_wfp_fee": 0, "net_amount": 13513.86, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 13513.86, "status": "approved"}, {"accrual_id": "ACR-00089", "receipt_id": "RCP-00089", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-10", "gross_amount": 19462.5, "gross_currency": "UAH", "total_fees": 1211.15, "total_taxes": 0, "total_deductions": 3371.49, "total_service_fee": 173.02, "total_wfp_fee": 0, "net_amount": 16091.01, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 16091.01, "status": "approved"}, {"accrual_id": "ACR-00090", "receipt_id": "RCP-00090", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-13", "gross_amount": 8650.0, "gross_currency": "UAH", "total_fees": 595.12, "total_taxes": 0, "total_deductions": 595.12, "total_service_fee": 86.5, "total_wfp_fee": 0, "net_amount": 8054.88, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 8054.88, "status": "approved"}, {"accrual_id": "ACR-00091", "receipt_id": "RCP-00091", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-18", "gross_amount": 15207.5, "gross_currency": "UAH", "total_fees": 1046.28, "total_taxes": 0, "total_deductions": 1046.28, "total_service_fee": 152.08, "total_wfp_fee": 0, "net_amount": 14161.22, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 14161.22, "status": "approved"}, {"accrual_id": "ACR-00092", "receipt_id": "RCP-00092", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-19", "gross_amount": 14475.51, "gross_currency": "UAH", "total_fees": 995.92, "total_taxes": 0, "total_deductions": 995.92, "total_service_fee": 144.76, "total_wfp_fee": 0, "net_amount": 13479.59, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 13479.59, "status": "approved"}, {"accrual_id": "ACR-00094", "receipt_id": "RCP-00094", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-24", "gross_amount": 43450.0, "gross_currency": "UAH", "total_fees": 2989.36, "total_taxes": 0, "total_deductions": 2989.36, "total_service_fee": 434.5, "total_wfp_fee": 0, "net_amount": 40460.64, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 40460.64, "status": "approved"}, {"accrual_id": "ACR-00097", "receipt_id": "RCP-00097", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-28", "gross_amount": 19485.0, "gross_currency": "UAH", "total_fees": 1340.57, "total_taxes": 0, "total_deductions": 1730.27, "total_service_fee": 194.85, "total_wfp_fee": 0, "net_amount": 17754.73, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 17754.73, "status": "approved"}, {"accrual_id": "ACR-00098", "receipt_id": "RCP-00098", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-16", "gross_amount": 43670.0, "gross_currency": "UAH", "total_fees": 0, "total_taxes": 2620.2, "total_deductions": 2620.2, "total_service_fee": 0, "total_wfp_fee": 0, "net_amount": 41049.8, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 41049.8, "status": "approved"}, {"accrual_id": "ACR-00099", "receipt_id": "RCP-00099", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-01-23", "gross_amount": 43480.0, "gross_currency": "UAH", "total_fees": 0, "total_taxes": 2608.8, "total_deductions": 2608.8, "total_service_fee": 0, "total_wfp_fee": 0, "net_amount": 40871.2, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 40871.2, "status": "approved"}, {"accrual_id": "ACR-00102", "receipt_id": "RCP-00102", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-02", "gross_amount": 14286.300000000001, "gross_currency": "UAH", "total_fees": 0, "total_taxes": 857.183, "total_deductions": 857.183, "total_service_fee": 0, "total_wfp_fee": 0, "net_amount": 13429.117, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 13429.117, "status": "approved"}, {"accrual_id": "ACR-00103", "receipt_id": "RCP-00103", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-16", "gross_amount": 14315.728000000001, "gross_currency": "UAH", "total_fees": 0, "total_taxes": 858.94728, "total_deductions": 858.94728, "total_service_fee": 0, "total_wfp_fee": 0, "net_amount": 13456.78072, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 13456.78072, "status": "approved"}, {"accrual_id": "ACR-00104", "receipt_id": "RCP-00104", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-28", "gross_amount": 14286.832, "gross_currency": "UAH", "total_fees": 0, "total_taxes": 857.20832, "total_deductions": 857.20832, "total_service_fee": 0, "total_wfp_fee": 0, "net_amount": 13429.62368, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 13429.62368, "status": "approved"}, {"accrual_id": "ACR-00105", "receipt_id": "RCP-00102", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-04", "gross_amount": -37.099999999998545, "gross_currency": "UAH", "total_fees": 0, "total_taxes": 0, "total_deductions": 0, "total_service_fee": 0, "total_wfp_fee": 0, "net_amount": -37.099999999998545, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": -37.099999999998545, "status": "approved", "notes": "Курсовая разница по конвертации CNV-00001 (EUR→UAH): НБУ 14286.30 / факт 14249.20"}, {"accrual_id": "ACR-00106", "receipt_id": "RCP-00103", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-02-17", "gross_amount": -72.1299999999992, "gross_currency": "UAH", "total_fees": 0, "total_taxes": 0, "total_deductions": 0, "total_service_fee": 0, "total_wfp_fee": 0, "net_amount": -72.1299999999992, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": -72.1299999999992, "status": "approved", "notes": "Курсовая разница по конвертации CNV-00002 (EUR→UAH): НБУ 14315.73 / факт 14243.60"}, {"accrual_id": "ACR-00107", "receipt_id": "RCP-00104", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-03-02", "gross_amount": -188.82999999999993, "gross_currency": "UAH", "total_fees": 0, "total_taxes": 0, "total_deductions": 0, "total_service_fee": 0, "total_wfp_fee": 0, "net_amount": -188.82999999999993, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": -188.82999999999993, "status": "approved", "notes": "Курсовая разница по конвертации CNV-00003 (EUR→UAH): НБУ 14286.83 / факт 14098.00"}, {"accrual_id": "ACR-00108", "receipt_id": "RCP-00105", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-03-02", "gross_amount": 8660.0, "gross_currency": "UAH", "total_fees": 169.74, "total_taxes": 424.34, "total_deductions": 767.28, "total_service_fee": 84.87, "total_wfp_fee": 0, "net_amount": 7892.72, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 7892.72, "status": "approved"}, {"accrual_id": "ACR-00109", "receipt_id": "RCP-00106", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-03-03", "gross_amount": 19575.0, "gross_currency": "UAH", "total_fees": 348.04, "total_taxes": 870.11, "total_deductions": 3390.98, "total_service_fee": 174.02, "total_wfp_fee": 0, "net_amount": 16184.02, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 16184.02, "status": "approved"}, {"accrual_id": "ACR-00110", "receipt_id": "RCP-00107", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-03-04", "gross_amount": 21875.0, "gross_currency": "UAH", "total_fees": 428.76, "total_taxes": 1071.88, "total_deductions": 1938.14, "total_service_fee": 214.38, "total_wfp_fee": 0, "net_amount": 19936.86, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 19936.86, "status": "approved"}, {"accrual_id": "ACR-00113", "receipt_id": "RCP-00110", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-03-05", "gross_amount": 14685.3, "gross_currency": "UAH", "total_fees": 287.84, "total_taxes": 719.58, "total_deductions": 1007.42, "total_service_fee": 143.92, "total_wfp_fee": 0, "net_amount": 13677.88, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 13677.88, "status": "approved"}, {"accrual_id": "ACR-00115", "receipt_id": "RCP-00112", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "course_id": "CRS-002", "course_name": "AI Ковчег", "accrual_date": "2026-03-05", "gross_amount": 19845.0, "gross_currency": "UAH", "total_fees": 352.84, "total_taxes": 882.11, "total_deductions": 3437.75, "total_service_fee": 176.42, "total_wfp_fee": 0, "net_amount": 16407.25, "net_currency": "UAH", "fx_rate_to_uah": 1.0, "net_amount_uah": 16407.25, "status": "approved"}], "deductions": [{"deduction_id": "DED-00150", "accrual_id": "ACR-00048", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19485.0, "rate_pct": "факт.", "deduction_amount": 1461.38, "currency": "UAH", "deduction_amount_uah": 1461.38, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00159", "accrual_id": "ACR-00057", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 2150.0, "rate_pct": 2.0, "deduction_amount": 43.0, "currency": "UAH", "deduction_amount_uah": 43.0, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00160", "accrual_id": "ACR-00058", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 2150.0, "rate_pct": 2.0, "deduction_amount": 43.0, "currency": "UAH", "deduction_amount_uah": 43.0, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00161", "accrual_id": "ACR-00059", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 40850.0, "rate_pct": "факт.", "deduction_amount": 4534.35, "currency": "UAH", "deduction_amount_uah": 4534.35, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00162", "accrual_id": "ACR-00060", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 2150.0, "rate_pct": 2.0, "deduction_amount": 43.0, "currency": "UAH", "deduction_amount_uah": 43.0, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00165", "accrual_id": "ACR-00063", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 24999.0, "rate_pct": "факт.", "deduction_amount": 1549.94, "currency": "UAH", "deduction_amount_uah": 1549.94, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00166", "accrual_id": "ACR-00064", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19350.0, "rate_pct": 2.0, "deduction_amount": 387.0, "currency": "UAH", "deduction_amount_uah": 387.0, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00167", "accrual_id": "ACR-00065", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 43000.0, "rate_pct": 2.0, "deduction_amount": 860.0, "currency": "UAH", "deduction_amount_uah": 860.0, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00168", "accrual_id": "ACR-00066", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19395.0, "rate_pct": 2.0, "deduction_amount": 387.9, "currency": "UAH", "deduction_amount_uah": 387.9, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00174", "accrual_id": "ACR-00072", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 4310.0, "rate_pct": 2.0, "deduction_amount": 86.2, "currency": "UAH", "deduction_amount_uah": 86.2, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00177", "accrual_id": "ACR-00075", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19395.0, "rate_pct": "факт.", "deduction_amount": 2152.85, "currency": "UAH", "deduction_amount_uah": 2152.85, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00179", "accrual_id": "ACR-00077", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19395.0, "rate_pct": "факт.", "deduction_amount": 2152.85, "currency": "UAH", "deduction_amount_uah": 2152.85, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00180", "accrual_id": "ACR-00078", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19395.0, "rate_pct": 2.0, "deduction_amount": 387.9, "currency": "UAH", "deduction_amount_uah": 387.9, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00183", "accrual_id": "ACR-00081", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 43100.0, "rate_pct": "факт.", "deduction_amount": 4784.1, "currency": "UAH", "deduction_amount_uah": 4784.1, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00186", "accrual_id": "ACR-00084", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19395.0, "rate_pct": "факт.", "deduction_amount": 2152.85, "currency": "UAH", "deduction_amount_uah": 2152.85, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00188", "accrual_id": "ACR-00086", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 21625.0, "rate_pct": 2.0, "deduction_amount": 432.5, "currency": "UAH", "deduction_amount_uah": 432.5, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00189", "accrual_id": "ACR-00089", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19462.5, "rate_pct": "факт.", "deduction_amount": 2160.34, "currency": "UAH", "deduction_amount_uah": 2160.34, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00238", "accrual_id": "ACR-00048", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 18023.62, "rate_pct": 1.0, "deduction_amount": 180.24, "currency": "UAH", "deduction_amount_uah": 180.24, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00247", "accrual_id": "ACR-00057", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 2107.0, "rate_pct": 1.0, "deduction_amount": 21.07, "currency": "UAH", "deduction_amount_uah": 21.07, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00248", "accrual_id": "ACR-00058", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 2107.0, "rate_pct": 1.0, "deduction_amount": 21.07, "currency": "UAH", "deduction_amount_uah": 21.07, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00249", "accrual_id": "ACR-00059", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 36315.65, "rate_pct": 1.0, "deduction_amount": 363.16, "currency": "UAH", "deduction_amount_uah": 363.16, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00250", "accrual_id": "ACR-00060", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 2107.0, "rate_pct": 1.0, "deduction_amount": 21.07, "currency": "UAH", "deduction_amount_uah": 21.07, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00253", "accrual_id": "ACR-00063", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 23449.06, "rate_pct": 1.0, "deduction_amount": 234.49, "currency": "UAH", "deduction_amount_uah": 234.49, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00254", "accrual_id": "ACR-00064", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 18963.0, "rate_pct": 1.0, "deduction_amount": 189.63, "currency": "UAH", "deduction_amount_uah": 189.63, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00255", "accrual_id": "ACR-00065", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 42140.0, "rate_pct": 1.0, "deduction_amount": 421.4, "currency": "UAH", "deduction_amount_uah": 421.4, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00256", "accrual_id": "ACR-00066", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 19007.1, "rate_pct": 1.0, "deduction_amount": 190.07, "currency": "UAH", "deduction_amount_uah": 190.07, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00262", "accrual_id": "ACR-00072", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 4223.8, "rate_pct": 1.0, "deduction_amount": 42.24, "currency": "UAH", "deduction_amount_uah": 42.24, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00265", "accrual_id": "ACR-00075", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 1.0, "deduction_amount": 172.42, "currency": "UAH", "deduction_amount_uah": 172.42, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00267", "accrual_id": "ACR-00077", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 1.0, "deduction_amount": 172.42, "currency": "UAH", "deduction_amount_uah": 172.42, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00268", "accrual_id": "ACR-00078", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 19007.1, "rate_pct": 1.0, "deduction_amount": 190.07, "currency": "UAH", "deduction_amount_uah": 190.07, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00271", "accrual_id": "ACR-00081", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 38315.9, "rate_pct": 1.0, "deduction_amount": 383.16, "currency": "UAH", "deduction_amount_uah": 383.16, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00274", "accrual_id": "ACR-00084", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 1.0, "deduction_amount": 172.42, "currency": "UAH", "deduction_amount_uah": 172.42, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00276", "accrual_id": "ACR-00086", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 21192.5, "rate_pct": 1.0, "deduction_amount": 211.93, "currency": "UAH", "deduction_amount_uah": 211.93, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00277", "accrual_id": "ACR-00087", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 14512.3, "rate_pct": 1.0, "deduction_amount": 145.12, "currency": "UAH", "deduction_amount_uah": 145.12, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00279", "accrual_id": "ACR-00089", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 17302.16, "rate_pct": 1.0, "deduction_amount": 173.02, "currency": "UAH", "deduction_amount_uah": 173.02, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00280", "accrual_id": "ACR-00090", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 8650.0, "rate_pct": 1.0, "deduction_amount": 86.5, "currency": "UAH", "deduction_amount_uah": 86.5, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00281", "accrual_id": "ACR-00091", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 15207.5, "rate_pct": 1.0, "deduction_amount": 152.08, "currency": "UAH", "deduction_amount_uah": 152.08, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00282", "accrual_id": "ACR-00092", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 14475.51, "rate_pct": 1.0, "deduction_amount": 144.76, "currency": "UAH", "deduction_amount_uah": 144.76, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00284", "accrual_id": "ACR-00094", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 43450.0, "rate_pct": 1.0, "deduction_amount": 434.5, "currency": "UAH", "deduction_amount_uah": 434.5, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00287", "accrual_id": "ACR-00097", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 19485.0, "rate_pct": 1.0, "deduction_amount": 194.85, "currency": "UAH", "deduction_amount_uah": 194.85, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00288", "owner_id": "OWN-002", "deduction_type": "cash_withdrawal_fee", "deduction_category": "owner_expense", "base_amount": 210270.0, "rate_pct": 1.0, "deduction_amount": 2102.7, "currency": "UAH", "deduction_amount_uah": 2102.7, "status": "confirmed", "contour_id": "CTR-006", "expense_period": "2026-02-09"}, {"deduction_id": "DED-00290", "owner_id": "OWN-002", "deduction_type": "cash_withdrawal_fee", "deduction_category": "owner_expense", "base_amount": 29596.827731092435, "rate_pct": 1.0, "deduction_amount": 295.9682773, "currency": "UAH", "deduction_amount_uah": 295.9682773, "status": "confirmed", "contour_id": "CTR-006", "expense_period": "2026-02-24"}, {"deduction_id": "DED-00292", "accrual_id": "ACR-00098", "owner_id": "OWN-002", "deduction_type": "tax", "deduction_category": "tax", "base_amount": 43670, "rate_pct": 5.0, "deduction_amount": 2183.5, "currency": "UAH", "deduction_amount_uah": 2183.5, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00293", "accrual_id": "ACR-00099", "owner_id": "OWN-002", "deduction_type": "tax", "deduction_category": "tax", "base_amount": 43480, "rate_pct": 5.0, "deduction_amount": 2174, "currency": "UAH", "deduction_amount_uah": 2174, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00294", "accrual_id": "ACR-00098", "owner_id": "OWN-002", "deduction_type": "military_tax", "deduction_category": "tax", "base_amount": 43670, "rate_pct": 1.0, "deduction_amount": 436.7, "currency": "UAH", "deduction_amount_uah": 436.7, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00295", "accrual_id": "ACR-00099", "owner_id": "OWN-002", "deduction_type": "military_tax", "deduction_category": "tax", "base_amount": 43480, "rate_pct": 1.0, "deduction_amount": 434.8, "currency": "UAH", "deduction_amount_uah": 434.8, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00296", "owner_id": "OWN-002", "deduction_type": "bank_fee", "deduction_category": "owner_expense", "base_amount": 165.0, "rate_pct": 0.0, "deduction_amount": 165, "currency": "UAH", "deduction_amount_uah": 165, "status": "paid", "contour_id": "CTR-001", "expense_period": "2026-01-31"}, {"deduction_id": "DED-00301", "accrual_id": "ACR-00102", "owner_id": "OWN-002", "deduction_type": "tax", "deduction_category": "tax", "base_amount": 14286.300000000001, "rate_pct": 5.0, "deduction_amount": 714.32, "currency": "UAH", "deduction_amount_uah": 714.32, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00302", "accrual_id": "ACR-00102", "owner_id": "OWN-002", "deduction_type": "military_tax", "deduction_category": "tax", "base_amount": 14286.3, "rate_pct": 1.0, "deduction_amount": 142.863, "currency": "UAH", "deduction_amount_uah": 142.863, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00303", "accrual_id": "ACR-00103", "owner_id": "OWN-002", "deduction_type": "tax", "deduction_category": "tax", "base_amount": 14315.728000000001, "rate_pct": 5.0, "deduction_amount": 715.79, "currency": "UAH", "deduction_amount_uah": 715.79, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00304", "accrual_id": "ACR-00103", "owner_id": "OWN-002", "deduction_type": "military_tax", "deduction_category": "tax", "base_amount": 14315.728, "rate_pct": 1.0, "deduction_amount": 143.15728, "currency": "UAH", "deduction_amount_uah": 143.15728, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00305", "accrual_id": "ACR-00104", "owner_id": "OWN-002", "deduction_type": "tax", "deduction_category": "tax", "base_amount": 14286.832, "rate_pct": 5.0, "deduction_amount": 714.34, "currency": "UAH", "deduction_amount_uah": 714.34, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00306", "accrual_id": "ACR-00104", "owner_id": "OWN-002", "deduction_type": "military_tax", "deduction_category": "tax", "base_amount": 14286.832, "rate_pct": 1.0, "deduction_amount": 142.86832, "currency": "UAH", "deduction_amount_uah": 142.86832, "status": "paid", "contour_id": "CTR-001"}, {"deduction_id": "DED-00307", "accrual_id": "ACR-00097", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19485, "rate_pct": 2.0, "deduction_amount": 389.7, "currency": "UAH", "deduction_amount_uah": 389.7, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00308", "accrual_id": "ACR-00087", "owner_id": "OWN-002", "deduction_type": "wfp_prime", "deduction_category": "owner_expense", "base_amount": 14512.3, "rate_pct": "факт.", "deduction_amount": 290.25, "currency": "UAH", "deduction_amount_uah": 290.25, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00309", "accrual_id": "ACR-00090", "owner_id": "OWN-002", "deduction_type": "wfp_prime", "deduction_category": "owner_expense", "base_amount": 8650.0, "rate_pct": "факт.", "deduction_amount": 173.0, "currency": "UAH", "deduction_amount_uah": 173.0, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00310", "accrual_id": "ACR-00091", "owner_id": "OWN-002", "deduction_type": "wfp_prime", "deduction_category": "owner_expense", "base_amount": 15207.5, "rate_pct": "факт.", "deduction_amount": 304.15, "currency": "UAH", "deduction_amount_uah": 304.15, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00311", "accrual_id": "ACR-00092", "owner_id": "OWN-002", "deduction_type": "wfp_prime", "deduction_category": "owner_expense", "base_amount": 14475.51, "rate_pct": "факт.", "deduction_amount": 289.51, "currency": "UAH", "deduction_amount_uah": 289.51, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00312", "accrual_id": "ACR-00094", "owner_id": "OWN-002", "deduction_type": "wfp_prime", "deduction_category": "owner_expense", "base_amount": 43450.0, "rate_pct": "факт.", "deduction_amount": 869.0, "currency": "UAH", "deduction_amount_uah": 869.0, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00313", "accrual_id": "ACR-00075", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 5.0, "deduction_amount": 862.11, "currency": "UAH", "deduction_amount_uah": 862.11, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00314", "accrual_id": "ACR-00077", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 5.0, "deduction_amount": 862.11, "currency": "UAH", "deduction_amount_uah": 862.11, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00315", "accrual_id": "ACR-00078", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 19007.1, "rate_pct": 5.0, "deduction_amount": 950.36, "currency": "UAH", "deduction_amount_uah": 950.36, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00316", "accrual_id": "ACR-00081", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 38315.9, "rate_pct": 5.0, "deduction_amount": 1915.8, "currency": "UAH", "deduction_amount_uah": 1915.8, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00317", "accrual_id": "ACR-00084", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 5.0, "deduction_amount": 862.11, "currency": "UAH", "deduction_amount_uah": 862.11, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00318", "accrual_id": "ACR-00086", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 21192.5, "rate_pct": 5.0, "deduction_amount": 1059.63, "currency": "UAH", "deduction_amount_uah": 1059.63, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00319", "accrual_id": "ACR-00087", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 14222.05, "rate_pct": 5.0, "deduction_amount": 711.1, "currency": "UAH", "deduction_amount_uah": 711.1, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00320", "accrual_id": "ACR-00089", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 17302.16, "rate_pct": 5.0, "deduction_amount": 865.11, "currency": "UAH", "deduction_amount_uah": 865.11, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00321", "accrual_id": "ACR-00090", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 8477.0, "rate_pct": 5.0, "deduction_amount": 423.85, "currency": "UAH", "deduction_amount_uah": 423.85, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00322", "accrual_id": "ACR-00091", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 14903.35, "rate_pct": 5.0, "deduction_amount": 745.17, "currency": "UAH", "deduction_amount_uah": 745.17, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00323", "accrual_id": "ACR-00092", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 14186.0, "rate_pct": 5.0, "deduction_amount": 709.3, "currency": "UAH", "deduction_amount_uah": 709.3, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00324", "accrual_id": "ACR-00094", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 42581.0, "rate_pct": 5.0, "deduction_amount": 2129.05, "currency": "UAH", "deduction_amount_uah": 2129.05, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00325", "accrual_id": "ACR-00097", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "fee", "base_amount": 19095.3, "rate_pct": 5.0, "deduction_amount": 954.77, "currency": "UAH", "deduction_amount_uah": 954.77, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00326", "accrual_id": "ACR-00075", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 1.0, "deduction_amount": 172.42, "currency": "UAH", "deduction_amount_uah": 172.42, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00327", "accrual_id": "ACR-00077", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 1.0, "deduction_amount": 172.42, "currency": "UAH", "deduction_amount_uah": 172.42, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00328", "accrual_id": "ACR-00078", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 19007.1, "rate_pct": 1.0, "deduction_amount": 190.07, "currency": "UAH", "deduction_amount_uah": 190.07, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00329", "accrual_id": "ACR-00081", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 38315.9, "rate_pct": 1.0, "deduction_amount": 383.16, "currency": "UAH", "deduction_amount_uah": 383.16, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00330", "accrual_id": "ACR-00084", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 17242.15, "rate_pct": 1.0, "deduction_amount": 172.42, "currency": "UAH", "deduction_amount_uah": 172.42, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00331", "accrual_id": "ACR-00086", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 21192.5, "rate_pct": 1.0, "deduction_amount": 211.93, "currency": "UAH", "deduction_amount_uah": 211.93, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00332", "accrual_id": "ACR-00087", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 14222.05, "rate_pct": 1.0, "deduction_amount": 142.22, "currency": "UAH", "deduction_amount_uah": 142.22, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00333", "accrual_id": "ACR-00089", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 17302.16, "rate_pct": 1.0, "deduction_amount": 173.02, "currency": "UAH", "deduction_amount_uah": 173.02, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00334", "accrual_id": "ACR-00090", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 8477.0, "rate_pct": 1.0, "deduction_amount": 84.77, "currency": "UAH", "deduction_amount_uah": 84.77, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00335", "accrual_id": "ACR-00091", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 14903.35, "rate_pct": 1.0, "deduction_amount": 149.03, "currency": "UAH", "deduction_amount_uah": 149.03, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00336", "accrual_id": "ACR-00092", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 14186.0, "rate_pct": 1.0, "deduction_amount": 141.86, "currency": "UAH", "deduction_amount_uah": 141.86, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00337", "accrual_id": "ACR-00094", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 42581.0, "rate_pct": 1.0, "deduction_amount": 425.81, "currency": "UAH", "deduction_amount_uah": 425.81, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00338", "accrual_id": "ACR-00097", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 19095.3, "rate_pct": 1.0, "deduction_amount": 190.95, "currency": "UAH", "deduction_amount_uah": 190.95, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00339", "owner_id": "OWN-002", "deduction_type": "ops_service_fee", "deduction_category": "owner_expense", "base_amount": 42888.86, "rate_pct": 2.0, "deduction_amount": 857.78, "currency": "UAH", "deduction_amount_uah": 857.78, "status": "confirmed", "contour_id": "CTR-004", "expense_period": "2026-02-01", "null": "Поступления CTR-001"}, {"deduction_id": "DED-00340", "owner_id": "OWN-002", "deduction_type": "ops_service_fee", "deduction_category": "owner_expense", "base_amount": 277547.81, "rate_pct": 2.0, "deduction_amount": 5550.96, "currency": "UAH", "deduction_amount_uah": 5550.96, "status": "confirmed", "contour_id": "CTR-004", "expense_period": "2026-02-01", "null": "Поступления CTR-002"}, {"deduction_id": "DED-00350", "accrual_id": "ACR-00108", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 8486.8, "rate_pct": 1.0, "deduction_amount": 84.87, "currency": "UAH", "deduction_amount_uah": 84.87, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00351", "accrual_id": "ACR-00109", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 17402.17, "rate_pct": 1.0, "deduction_amount": 174.02, "currency": "UAH", "deduction_amount_uah": 174.02, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00352", "accrual_id": "ACR-00110", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 21437.5, "rate_pct": 1.0, "deduction_amount": 214.38, "currency": "UAH", "deduction_amount_uah": 214.38, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00355", "accrual_id": "ACR-00113", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 14391.59, "rate_pct": 1.0, "deduction_amount": 143.92, "currency": "UAH", "deduction_amount_uah": 143.92, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00357", "accrual_id": "ACR-00115", "owner_id": "OWN-002", "deduction_type": "service_fee", "deduction_category": "fee", "base_amount": 17642.2, "rate_pct": 1.0, "deduction_amount": 176.42, "currency": "UAH", "deduction_amount_uah": 176.42, "status": "confirmed", "contour_id": "CTR-002"}, {"deduction_id": "DED-00360", "accrual_id": "ACR-00108", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 8660.0, "rate_pct": 2.0, "deduction_amount": 173.2, "currency": "UAH", "deduction_amount_uah": 173.2, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00361", "accrual_id": "ACR-00109", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19575.0, "rate_pct": "факт.", "deduction_amount": 2172.83, "currency": "UAH", "deduction_amount_uah": 2172.83, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00362", "accrual_id": "ACR-00110", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 21875.0, "rate_pct": 2.0, "deduction_amount": 437.5, "currency": "UAH", "deduction_amount_uah": 437.5, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00365", "accrual_id": "ACR-00115", "owner_id": "OWN-002", "deduction_type": "wfp_fee", "deduction_category": "fee", "base_amount": 19845.0, "rate_pct": "факт.", "deduction_amount": 2202.8, "currency": "UAH", "deduction_amount_uah": 2202.8, "status": "paid", "contour_id": "CTR-002"}, {"deduction_id": "DED-00368", "accrual_id": "ACR-00113", "owner_id": "OWN-002", "deduction_type": "wfp_prime", "deduction_category": "owner_expense", "base_amount": 14685.3, "rate_pct": "факт.", "deduction_amount": 293.71, "currency": "UAH", "deduction_amount_uah": 293.71, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00369", "accrual_id": "ACR-00108", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "tax", "base_amount": 8486.8, "rate_pct": 5.0, "deduction_amount": 424.34, "currency": "UAH", "deduction_amount_uah": 424.34, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00370", "accrual_id": "ACR-00109", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "tax", "base_amount": 17402.17, "rate_pct": 5.0, "deduction_amount": 870.11, "currency": "UAH", "deduction_amount_uah": 870.11, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00371", "accrual_id": "ACR-00110", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "tax", "base_amount": 21437.5, "rate_pct": 5.0, "deduction_amount": 1071.88, "currency": "UAH", "deduction_amount_uah": 1071.88, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00372", "accrual_id": "ACR-00113", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "tax", "base_amount": 14391.59, "rate_pct": 5.0, "deduction_amount": 719.58, "currency": "UAH", "deduction_amount_uah": 719.58, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00373", "accrual_id": "ACR-00115", "owner_id": "OWN-002", "deduction_type": "en_tax_luk", "deduction_category": "tax", "base_amount": 17642.2, "rate_pct": 5.0, "deduction_amount": 882.11, "currency": "UAH", "deduction_amount_uah": 882.11, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00374", "accrual_id": "ACR-00108", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 8486.8, "rate_pct": 1.0, "deduction_amount": 84.87, "currency": "UAH", "deduction_amount_uah": 84.87, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00375", "accrual_id": "ACR-00109", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 17402.17, "rate_pct": 1.0, "deduction_amount": 174.02, "currency": "UAH", "deduction_amount_uah": 174.02, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00376", "accrual_id": "ACR-00110", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 21437.5, "rate_pct": 1.0, "deduction_amount": 214.38, "currency": "UAH", "deduction_amount_uah": 214.38, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00377", "accrual_id": "ACR-00113", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 14391.59, "rate_pct": 1.0, "deduction_amount": 143.92, "currency": "UAH", "deduction_amount_uah": 143.92, "status": "confirmed", "contour_id": "CTR-004"}, {"deduction_id": "DED-00378", "accrual_id": "ACR-00115", "owner_id": "OWN-002", "deduction_type": "military_tax_luk", "deduction_category": "fee", "base_amount": 17642.2, "rate_pct": 1.0, "deduction_amount": 176.42, "currency": "UAH", "deduction_amount_uah": 176.42, "status": "confirmed", "contour_id": "CTR-004"}], "payouts": [{"payout_id": "PAY-00001", "payout_date": "2026-02-09", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-016", "source_account_name": "Яско И.И. крипто кошелёк", "source_contour_id": "CTR-008", "source_contour_type": "crypto", "source_entrepreneur_id": "ENT-003", "currency": "USDT", "amount": 4760.0, "fx_rate_to_uah": 44.17, "amount_uah": 210249.2, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed"}, {"payout_id": "PAY-00003", "payout_date": "2026-02-20", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-016", "source_account_name": "Яско И.И. крипто кошелёк", "source_contour_id": "CTR-008", "source_contour_type": "crypto", "source_entrepreneur_id": "ENT-003", "currency": "USDT", "amount": 670.0, "fx_rate_to_uah": 44.17, "amount_uah": 29593.9, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed"}, {"payout_id": "PAY-00021", "payout_date": "2026-02-02", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-012", "source_account_name": "Ясько И.И. личный Райффайзенбанк", "source_contour_id": "CTR-004", "source_contour_type": "personal", "source_entrepreneur_id": "ENT-003", "currency": "UAH", "amount": 20000.0, "fx_rate_to_uah": 1.0, "amount_uah": 20000, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Приліпкін Антон"}, {"payout_id": "PAY-00022", "payout_date": "2026-02-02", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-012", "source_account_name": "Ясько И.И. личный Райффайзенбанк", "source_contour_id": "CTR-004", "source_contour_type": "personal", "source_entrepreneur_id": "ENT-003", "currency": "UAH", "amount": 20000.0, "fx_rate_to_uah": 1.0, "amount_uah": 20000, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Приліпкіна Марія"}, {"payout_id": "PAY-00023", "payout_date": "2026-02-02", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-012", "source_account_name": "Ясько И.И. личный Райффайзенбанк", "source_contour_id": "CTR-004", "source_contour_type": "personal", "source_entrepreneur_id": "ENT-003", "currency": "UAH", "amount": 10000.0, "fx_rate_to_uah": 1.0, "amount_uah": 10000, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Прилипкін Олександр"}, {"payout_id": "PAY-00024", "payout_date": "2026-02-05", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-012", "source_account_name": "Ясько И.И. личный Райффайзенбанк", "source_contour_id": "CTR-004", "source_contour_type": "personal", "source_entrepreneur_id": "ENT-003", "currency": "UAH", "amount": 20000.0, "fx_rate_to_uah": 1.0, "amount_uah": 20000, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Кирило Шкиря"}, {"payout_id": "PAY-00025", "payout_date": "2026-02-05", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-012", "source_account_name": "Ясько И.И. личный Райффайзенбанк", "source_contour_id": "CTR-004", "source_contour_type": "personal", "source_entrepreneur_id": "ENT-003", "currency": "UAH", "amount": 20000.0, "fx_rate_to_uah": 1.0, "amount_uah": 20000, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Ганна Надолінна"}, {"payout_id": "PAY-00026", "payout_date": "2026-02-13", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-011", "source_account_name": "Ясько И.И. личный Монобанк", "source_contour_id": "CTR-004", "source_contour_type": "personal", "source_entrepreneur_id": "ENT-003", "currency": "UAH", "amount": 28712.0, "fx_rate_to_uah": 1.0, "amount_uah": 28712, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Ясько Владислав"}, {"payout_id": "PAY-00028", "payout_date": "2026-01-19", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-011", "source_account_name": "Ясько И.И. личный Монобанк", "source_contour_id": "CTR-004", "source_contour_type": "personal", "source_entrepreneur_id": "ENT-003", "currency": "UAH", "amount": 40884.0, "fx_rate_to_uah": 1.0, "amount_uah": 40884, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Ясько Владислав"}, {"payout_id": "PAY-00029", "payout_date": "2026-01-23", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-003", "source_account_name": "Лукьяненко Е.И. ФОП Приватбанк", "source_contour_id": "CTR-001", "source_contour_type": "business", "source_entrepreneur_id": "ENT-001", "currency": "UAH", "amount": 40871.2, "fx_rate_to_uah": 1.0, "amount_uah": 40871.2, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — ФОП Ландо Софія Юріївна"}, {"payout_id": "PAY-00030", "payout_date": "2026-03-02", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-011", "source_account_name": "Ясько И.И. личный Монобанк", "source_contour_id": "CTR-004", "source_contour_type": "personal", "source_entrepreneur_id": "ENT-003", "currency": "UAH", "amount": 18600.0, "fx_rate_to_uah": 1.0, "amount_uah": 18600, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Кирило Шкиря"}, {"payout_id": "PAY-00031", "payout_date": "2026-03-03", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-006", "source_account_name": "Полозовский А.В. ФОП Монобанк", "source_contour_id": "CTR-002", "source_contour_type": "business", "source_entrepreneur_id": "ENT-002", "currency": "UAH", "amount": 45300.0, "fx_rate_to_uah": 1.0, "amount_uah": 45300, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — ФОП Ландо Софія Юріївна"}, {"payout_id": "PAY-00032", "payout_date": "2026-03-07", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-006", "source_account_name": "Полозовский А.В. ФОП Монобанк", "source_contour_id": "CTR-002", "source_contour_type": "business", "source_entrepreneur_id": "ENT-002", "currency": "UAH", "amount": 22290.0, "fx_rate_to_uah": 1.0, "amount_uah": 22290, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Ольга C."}, {"payout_id": "PAY-00033", "payout_date": "2026-03-07", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "source_account_id": "ACC-006", "source_account_name": "Полозовский А.В. ФОП Монобанк", "source_contour_id": "CTR-002", "source_contour_type": "business", "source_entrepreneur_id": "ENT-002", "currency": "UAH", "amount": 26300.0, "fx_rate_to_uah": 1.0, "amount_uah": 26300, "fx_rate_source": "manual", "funding_type": "direct", "status": "executed", "notes": "По поручению Приліпкіна Антона — Ясько Владислав"}], "internals": [{"internal_id": "INT-00001", "operation_date": "2026-01-09", "operation_type": "transfer", "from_contour_id": "CTR-002", "from_contour_name": "Полозовский бизнес", "from_account_id": "ACC-006 — Полозовский А.В. ФОП Монобанк", "to_contour_id": "CTR-003", "to_contour_name": "Игорь Иванович ФОП", "to_account_id": "ACC-008 — Ясько И.И. ФОП Монобанк", "currency": "UAH", "amount": 11891.88, "fx_rate_to_uah": 1.0, "amount_uah": 11891.88, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00002", "operation_date": "2026-01-12", "operation_type": "transfer", "from_contour_id": "CTR-002", "from_contour_name": "Полозовский бизнес", "from_account_id": "ACC-006 — Полозовский А.В. ФОП Монобанк", "to_contour_id": "CTR-003", "to_contour_name": "Игорь Иванович ФОП", "to_account_id": "ACC-008 — Ясько И.И. ФОП Монобанк", "currency": "UAH", "amount": 12919.5, "fx_rate_to_uah": 1.0, "amount_uah": 12919.5, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00003", "operation_date": "2026-01-26", "operation_type": "transfer", "from_contour_id": "CTR-002", "from_contour_name": "Полозовский бизнес", "from_account_id": "ACC-006 — Полозовский А.В. ФОП Монобанк", "to_contour_id": "CTR-003", "to_contour_name": "Игорь Иванович ФОП", "to_account_id": "ACC-008 — Ясько И.И. ФОП Монобанк", "currency": "UAH", "amount": 28165.1, "fx_rate_to_uah": 1.0, "amount_uah": 28165.1, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00004", "operation_date": "2026-01-30", "operation_type": "transfer", "from_contour_id": "CTR-002", "from_contour_name": "Полозовский бизнес", "from_account_id": "ACC-006", "to_contour_id": "CTR-003", "to_contour_name": "Игорь Иванович ФОП", "to_account_id": "ACC-008", "currency": "UAH", "amount": 133441.58, "fx_rate_to_uah": 1.0, "amount_uah": 133441.58, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00005", "operation_date": "2026-02-23", "operation_type": "transfer", "from_contour_id": "CTR-002", "from_contour_name": "Полозовский бизнес", "from_account_id": "ACC-006", "to_contour_id": "CTR-003", "to_contour_name": "Игорь Иванович ФОП", "to_account_id": "ACC-008", "currency": "UAH", "amount": 89514.0, "fx_rate_to_uah": 1.0, "amount_uah": 89514, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00006", "operation_date": "2026-02-06", "operation_type": "transfer", "from_contour_id": "CTR-006", "from_contour_name": "Полозовский крипто", "from_account_id": "ACC-014", "to_contour_id": "CTR-008", "to_contour_name": "Игорь Иванович крипто", "to_account_id": "ACC-016", "currency": "USDT", "amount": 9077.0, "fx_rate_to_uah": 44.17345923717069, "amount_uah": 400962.4895, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00007", "operation_date": "2026-02-05", "operation_type": "transfer", "from_contour_id": "CTR-002", "from_contour_name": "Полозовский бизнес", "from_account_id": "ACC-006", "to_contour_id": "CTR-006", "to_contour_name": "Полозовский крипто", "to_account_id": "ACC-014", "currency": "UAH", "amount": 400962.49, "fx_rate_to_uah": 1.0, "amount_uah": 400962.49, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00008", "operation_date": "2026-01-27", "operation_type": "transfer", "from_contour_id": "CTR-004", "from_contour_name": "Игорь Иванович личный", "from_account_id": "ACC-011", "to_contour_id": "CTR-008", "to_contour_name": "Игорь Иванович крипто", "to_account_id": "ACC-016", "currency": "UAH", "amount": 28301, "fx_rate_to_uah": 1.0, "amount_uah": 28301, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00009", "operation_date": "2026-02-24", "operation_type": "transfer", "from_contour_id": "CTR-004", "from_contour_name": "Игорь Иванович личный", "from_account_id": "ACC-011", "to_contour_id": "CTR-008", "to_contour_name": "Игорь Иванович крипто", "to_account_id": "ACC-016", "currency": "UAH", "amount": 41200.0, "fx_rate_to_uah": 1.0, "amount_uah": 41200, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00010", "operation_date": "2026-01-19", "operation_type": "transfer", "from_contour_id": "CTR-001", "from_contour_name": "Лукьяненко бизнес", "from_account_id": "ACC-003", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-011", "currency": "UAH", "amount": 40884.0, "fx_rate_to_uah": 1.0, "amount_uah": 40884, "fx_rate_source": "manual", "status": "completed", "notes": "Перевод для выплаты Ясько Владиславу"}, {"internal_id": "INT-00013", "operation_date": "2026-02-13", "operation_type": "transfer", "from_contour_id": "CTR-001", "from_contour_name": "Лукьяненко бизнес", "from_account_id": "ACC-001", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-008", "currency": "UAH", "amount": 8711.0, "fx_rate_to_uah": 1.0, "amount_uah": 8711, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00014", "operation_date": "2026-02-16", "operation_type": "transfer", "from_contour_id": "CTR-001", "from_contour_name": "Лукьяненко бизнес", "from_account_id": "ACC-001", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-008", "currency": "UAH", "amount": 16700.0, "fx_rate_to_uah": 1.0, "amount_uah": 16700, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00015", "operation_date": "2026-02-17", "operation_type": "transfer", "from_contour_id": "CTR-001", "from_contour_name": "Лукьяненко бизнес", "from_account_id": "ACC-001", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-008", "currency": "UAH", "amount": 13388.0, "fx_rate_to_uah": 1.0, "amount_uah": 13388, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00016", "operation_date": "2026-03-02", "operation_type": "transfer", "from_contour_id": "CTR-001", "from_contour_name": "Лукьяненко бизнес", "from_account_id": "ACC-001", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-008", "currency": "UAH", "amount": 13250.0, "fx_rate_to_uah": 1.0, "amount_uah": 13250, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00017", "operation_date": "2026-01-09", "operation_type": "transfer", "from_contour_id": "CTR-003", "from_contour_name": "Игорь Иванович ФОП", "from_account_id": "ACC-008", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-011", "currency": "UAH", "amount": 11891.88, "fx_rate_to_uah": 1.0, "amount_uah": 11891.88, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00018", "operation_date": "2026-01-12", "operation_type": "transfer", "from_contour_id": "CTR-003", "from_contour_name": "Игорь Иванович ФОП", "from_account_id": "ACC-008", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-011", "currency": "UAH", "amount": 12919.5, "fx_rate_to_uah": 1.0, "amount_uah": 12919.5, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00019", "operation_date": "2026-01-26", "operation_type": "transfer", "from_contour_id": "CTR-003", "from_contour_name": "Игорь Иванович ФОП", "from_account_id": "ACC-008", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-011", "currency": "UAH", "amount": 28165.1, "fx_rate_to_uah": 1.0, "amount_uah": 28165.1, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00020", "operation_date": "2026-01-30", "operation_type": "transfer", "from_contour_id": "CTR-003", "from_contour_name": "Игорь Иванович ФОП", "from_account_id": "ACC-008", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-011", "currency": "UAH", "amount": 133441.58, "fx_rate_to_uah": 1.0, "amount_uah": 133441.58, "fx_rate_source": "manual", "status": "completed"}, {"internal_id": "INT-00021", "operation_date": "2026-02-23", "operation_type": "transfer", "from_contour_id": "CTR-003", "from_contour_name": "Игорь Иванович ФОП", "from_account_id": "ACC-008", "to_contour_id": "CTR-004", "to_contour_name": "Игорь Иванович личный", "to_account_id": "ACC-011", "currency": "UAH", "amount": 89514.0, "fx_rate_to_uah": 1.0, "amount_uah": 89514, "fx_rate_source": "manual", "status": "completed"}], "conversions": [{"conversion_id": "CNV-00001", "receipt_id": "RCP-00102", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "contour_id": "CTR-001", "account_id": "ACC-002", "accrual_date": "2026-02-02", "conversion_date": "2026-02-04", "currency": "EUR", "amount_foreign": 280.0, "fx_rate_nbu": 51.0225, "fx_rate_sale": 50.89, "amount_nbu": 14286.3, "amount_sale": 14249.2, "exchange_diff": -37.1, "linked_accrual_id": "ACR-00105", "status": "completed"}, {"conversion_id": "CNV-00002", "receipt_id": "RCP-00103", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "contour_id": "CTR-001", "account_id": "ACC-002", "accrual_date": "2026-02-16", "conversion_date": "2026-02-17", "currency": "EUR", "amount_foreign": 280.0, "fx_rate_nbu": 51.1276, "fx_rate_sale": 50.87, "amount_nbu": 14315.73, "amount_sale": 14243.6, "exchange_diff": -72.13, "linked_accrual_id": "ACR-00106", "status": "completed"}, {"conversion_id": "CNV-00003", "receipt_id": "RCP-00104", "owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "contour_id": "CTR-001", "account_id": "ACC-002", "accrual_date": "2026-02-28", "conversion_date": "2026-03-02", "currency": "EUR", "amount_foreign": 280.0, "fx_rate_nbu": 51.0244, "fx_rate_sale": 50.35, "amount_nbu": 14286.83, "amount_sale": 14098, "exchange_diff": -188.83, "linked_accrual_id": "ACR-00107", "status": "completed"}], "owner_balances": [{"owner_id": "OWN-001", "owner_name": "Ясько Владислав Игоревич", "total_gross": 480752.75, "total_deductions": 17853.91, "total_net": 464290.25, "total_owner_expenses": 1391.41, "total_paid": 449114.8667, "balance_due": 13783.97334, "total_refunds": 0, "currency": "UAH"}, {"owner_id": "OWN-002", "owner_name": "Прилипкин Антон", "total_gross": 669767.91, "total_deductions": 73523.03688, "total_net": 607436.9014, "total_owner_expenses": 11192.02828, "total_paid": 552800.3, "balance_due": 43444.57312, "total_refunds": 0, "currency": "UAH"}, {"owner_id": "OWN-003", "owner_name": "Ясько Игорь Иванович", "total_gross": 0, "total_deductions": 219.5466176, "total_net": 0, "total_owner_expenses": 219.5466176, "total_paid": 0, "balance_due": -219.5466176, "total_refunds": 0, "currency": "UAH"}], "contour_balances": [{"contour_id": "CTR-001", "contour_name": "Лукьяненко бизнес", "entrepreneur_name": "Лукьяненко Е.И.", "contour_type": "business", "total_receipts": 142894.86, "wfp_commission": 0, "total_receipts_net": 142894.86, "total_payouts": 40871.2, "funding_out": 0, "funding_in": 0, "compensation_in": 0, "compensation_out": 0, "total_transfers_out": 92933, "total_transfers_in": 0, "total_refunds": 0, "balance": 351.9614, "net_funding_credit": 0, "net_funding_debit": 0, "contour_income": 0}, {"contour_id": "CTR-002", "contour_name": "Полозовский бизнес", "entrepreneur_name": "Полозовский А. В.", "contour_type": "business", "total_receipts": 1007923.86, "wfp_commission": 39375.31, "total_receipts_net": 968548.55, "total_payouts": 206890, "funding_out": 0, "funding_in": 0, "compensation_in": 0, "compensation_out": 0, "total_transfers_out": 676894.55, "total_transfers_in": 0, "total_refunds": 0, "balance": 44644.1, "net_funding_credit": 0, "net_funding_debit": 0, "contour_income": 9677.73}, {"contour_id": "CTR-003", "contour_name": "Игорь Иванович ФОП", "entrepreneur_name": "Ясько И.И.", "contour_type": "business", "total_receipts": 0, "wfp_commission": 0, "total_receipts_net": 0, "total_payouts": 0, "funding_out": 0, "funding_in": 0, "compensation_in": 0, "compensation_out": 0, "total_transfers_out": 275932.06, "total_transfers_in": 275932.06, "total_refunds": 0, "balance": 0, "net_funding_credit": 0, "net_funding_debit": 0, "contour_income": 0}, {"contour_id": "CTR-004", "contour_name": "Игорь Иванович личный", "entrepreneur_name": "Ясько И.И.", "contour_type": "personal", "total_receipts": 0, "wfp_commission": 0, "total_receipts_net": 0, "total_payouts": 305652, "funding_out": 0, "funding_in": 0, "compensation_in": 0, "compensation_out": 0, "total_transfers_out": 69501, "total_transfers_in": 368865.06, "total_refunds": 0, "balance": -6287.94, "net_funding_credit": 0, "net_funding_debit": 0, "contour_income": 29050.54}, {"contour_id": "CTR-005", "contour_name": "Лукьяненко личный", "entrepreneur_name": "Лукьяненко Е.И.", "contour_type": "personal", "total_receipts": 0, "wfp_commission": 0, "total_receipts_net": 0, "total_payouts": 0, "funding_out": 0, "funding_in": 0, "compensation_in": 0, "compensation_out": 0, "total_transfers_out": 0, "total_transfers_in": 0, "total_refunds": 0, "balance": 0, "net_funding_credit": 0, "net_funding_debit": 0, "contour_income": 0}, {"contour_id": "CTR-006", "contour_name": "Полозовский крипто", "entrepreneur_name": "Полозовский А. В.", "contour_type": "crypto", "total_receipts": 0, "wfp_commission": 0, "total_receipts_net": 0, "total_payouts": 0, "funding_out": 0, "funding_in": 0, "compensation_in": 0, "compensation_out": 0, "total_transfers_out": 400962.4895, "total_transfers_in": 400962.49, "total_refunds": 0, "balance": 0.0005042016273, "net_funding_credit": 0, "net_funding_debit": 0, "contour_income": 0}, {"contour_id": "CTR-007", "contour_name": "Полозовский личный", "entrepreneur_name": "Полозовский А. В.", "contour_type": "personal", "total_receipts": 0, "wfp_commission": 0, "total_receipts_net": 0, "total_payouts": 0, "funding_out": 0, "funding_in": 0, "compensation_in": 0, "compensation_out": 0, "total_transfers_out": 0, "total_transfers_in": 0, "total_refunds": 0, "balance": 0, "net_funding_credit": 0, "net_funding_debit": 0, "contour_income": 0}, {"contour_id": "CTR-008", "contour_name": "Игорь Иванович крипто", "entrepreneur_name": "Ясько И.И.", "contour_type": "crypto", "total_receipts": 0, "wfp_commission": 0, "total_receipts_net": 0, "total_payouts": 448501.9667, "funding_out": 0, "funding_in": 0, "compensation_in": 0, "compensation_out": 0, "total_transfers_out": 0, "total_transfers_in": 470463.4895, "total_refunds": 0, "balance": 21961.52284, "net_funding_credit": 0, "net_funding_debit": 0, "contour_income": 0}], "courses": [{"id": "CRS-001", "name": "AI маркетолог"}, {"id": "CRS-002", "name": "AI Ковчег"}, {"id": "CRS-003", "name": "\"Низшая Лига\""}, {"id": "CRS-004", "name": "YASKO WORKSHOP"}, {"id": "CRS-005", "name": "Dream year 2026"}, {"id": "CRS-006", "name": "1 персональная медитация"}], "contours": [{"id": "CTR-001", "name": "Лукьяненко бизнес", "type": "business"}, {"id": "CTR-002", "name": "Полозовский бизнес", "type": "business"}, {"id": "CTR-003", "name": "Игорь Иванович ФОП", "type": "business"}, {"id": "CTR-004", "name": "Игорь Иванович личный", "type": "personal"}, {"id": "CTR-005", "name": "Лукьяненко личный", "type": "personal"}, {"id": "CTR-006", "name": "Полозовский крипто", "type": "crypto"}, {"id": "CTR-007", "name": "Полозовский личный", "type": "personal"}, {"id": "CTR-008", "name": "Игорь Иванович крипто", "type": "crypto"}]};
+
+// ===================== HELPERS =====================
+const fmt = (n) => {
+  if (n == null || isNaN(n)) return '—';
+  return new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n);
+};
+const fmtCurrency = (n, cur = 'UAH') => fmt(n) + ' ' + cur;
+
+const DEDUCTION_LABELS = {
+  'wfp_fee': 'Комісія WFP',
+  'service_fee': 'Сервісна комісія',
+  'cash_withdrawal_fee': 'Зняття готівки',
+  'tax': 'Податок',
+  'military_tax': 'Військовий збір',
+  'bank_fee': 'Банківська комісія',
+  'wfp_prime': 'WFP Prime',
+  'en_tax_luk': 'ЄП Лук\'яненко',
+  'military_tax_luk': 'ВЗ Лук\'яненко',
+  'ops_service_fee': 'Операційна комісія',
+};
+
+const DEDUCTION_COLORS = {
+  'wfp_fee': '#ef4444',
+  'service_fee': '#f97316',
+  'cash_withdrawal_fee': '#eab308',
+  'tax': '#22c55e',
+  'military_tax': '#06b6d4',
+  'bank_fee': '#3b82f6',
+  'wfp_prime': '#8b5cf6',
+  'en_tax_luk': '#ec4899',
+  'military_tax_luk': '#14b8a6',
+  'ops_service_fee': '#a855f7',
+};
+
+// ===================== PERIOD FILTER =====================
+let currentPeriod = 'all';
+
+function filterByPeriod(items, dateKey) {
+  if (currentPeriod === 'all') return items;
+  const now = new Date('2026-03-05');
+  let from;
+  if (currentPeriod === 'day') from = new Date('2026-03-05');
+  else if (currentPeriod === 'week') { from = new Date(now); from.setDate(from.getDate() - 7); }
+  else if (currentPeriod === 'month') { from = new Date(now); from.setMonth(from.getMonth() - 1); }
+  return items.filter(i => new Date(i[dateKey]) >= from);
+}
+
+// ===================== KPI CARDS =====================
+// ===================== SPARKLINE HELPER =====================
+function drawSparkline(canvas, data, color) {
+  if (!data.length) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth;
+  const h = canvas.offsetHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const pad = 2;
+  const step = (w - pad * 2) / (data.length - 1 || 1);
+
+  // Parse CSS variable color
+  const temp = document.createElement('div');
+  temp.style.color = color;
+  document.body.appendChild(temp);
+  const rgb = getComputedStyle(temp).color;
+  document.body.removeChild(temp);
+
+  // Fill gradient
+  const gradient = ctx.createLinearGradient(0, 0, 0, h);
+  gradient.addColorStop(0, rgb.replace(')', ', 0.2)').replace('rgb', 'rgba'));
+  gradient.addColorStop(1, rgb.replace(')', ', 0)').replace('rgb', 'rgba'));
+
+  ctx.beginPath();
+  ctx.moveTo(pad, h);
+  data.forEach((v, i) => {
+    const x = pad + i * step;
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    ctx.lineTo(x, y);
+  });
+  ctx.lineTo(pad + (data.length - 1) * step, h);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = pad + i * step;
+    const y = h - pad - ((v - min) / range) * (h - pad * 2);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = rgb;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Last point dot
+  const lastX = pad + (data.length - 1) * step;
+  const lastY = h - pad - ((data[data.length - 1] - min) / range) * (h - pad * 2);
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+  ctx.fillStyle = rgb;
+  ctx.fill();
+}
+
+function getSparklineData(type) {
+  // Group by date, return daily totals array
+  const byDate = {};
+  if (type === 'receipts') {
+    DATA.receipts.forEach(r => { byDate[r.receipt_date] = (byDate[r.receipt_date] || 0) + r.amount_uah; });
+  } else if (type === 'fees') {
+    DATA.receipts.forEach(r => { byDate[r.receipt_date] = (byDate[r.receipt_date] || 0) + (r.wfp_fee_amount || 0); });
+  } else if (type === 'net') {
+    DATA.accruals.forEach(a => { byDate[a.accrual_date] = (byDate[a.accrual_date] || 0) + a.net_amount_uah; });
+  } else if (type === 'payouts') {
+    DATA.payouts.forEach(p => { byDate[p.payout_date] = (byDate[p.payout_date] || 0) + p.amount_uah; });
+  }
+  return Object.keys(byDate).sort().map(d => byDate[d]);
+}
+
+// ===================== KPI CARDS =====================
+function renderKPIs() {
+  const own = OWNER;
+  const receipts = filterByPeriod(DATA.receipts, 'receipt_date');
+  const totalReceipts = receipts.reduce((s, r) => s + r.amount_uah, 0);
+  const totalFees = receipts.reduce((s, r) => s + (r.wfp_fee_amount || 0), 0);
+
+  const accruals = filterByPeriod(DATA.accruals, 'accrual_date');
+  const totalNet = accruals.reduce((s, a) => s + a.net_amount_uah, 0);
+
+  const payouts = filterByPeriod(DATA.payouts, 'payout_date');
+  const totalPaid = payouts.reduce((s, p) => s + p.amount_uah, 0);
+
+  const cards = [
+    { label:'Надходження', value: fmtCurrency(totalReceipts), sub: `${receipts.length} транзакцій`, icon:'↓', color:'var(--green)', bg:'var(--green-bg)', spark:'receipts' },
+    { label:'Комісії WFP', value: fmtCurrency(totalFees), sub: `${(totalFees/totalReceipts*100||0).toFixed(1)}% від надходжень`, icon:'%', color:'var(--red)', bg:'var(--red-bg)', spark:'fees' },
+    { label:'Нетто нараховано', value: fmtCurrency(totalNet), sub: `${accruals.length} нарахувань`, icon:'=', color:'var(--blue)', bg:'var(--blue-bg)', spark:'net' },
+    { label:'Виплачено', value: fmtCurrency(totalPaid), sub: `${payouts.length} виплат`, icon:'↑', color:'var(--purple)', bg:'var(--purple-bg)', spark:'payouts' },
+    { label:'Баланс до виплати', value: fmtCurrency(own.balance_due), sub: 'Залишок на рахунку', icon:'$', color:'var(--yellow)', bg:'var(--yellow-bg)', spark:null },
+  ];
+
+  document.getElementById('kpiGrid').innerHTML = cards.map((c, i) => `
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:${c.bg};color:${c.color}">${c.icon}</div>
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value" style="color:${c.color}">${c.value}</div>
+      <div class="kpi-sub">${c.sub}</div>
+      ${c.spark ? `<div class="kpi-sparkline"><canvas id="spark-${i}"></canvas></div>` : ''}
+    </div>
+  `).join('');
+
+  // Draw sparklines after DOM update
+  requestAnimationFrame(() => {
+    cards.forEach((c, i) => {
+      if (!c.spark) return;
+      const canvas = document.getElementById(`spark-${i}`);
+      if (!canvas) return;
+      const data = getSparklineData(c.spark);
+      if (data.length > 1) drawSparkline(canvas, data, c.color);
+    });
+  });
+}
+
+// ===================== MONEY FLOW =====================
+function renderFlow() {
+  const own = DATA.owner_balances.find(o => o.owner_id === 'OWN-002');
+  const totalReceipts = DATA.receipts.reduce((s,r) => s + r.amount_uah, 0);
+  const totalFees = DATA.receipts.reduce((s,r) => s + (r.wfp_fee_amount||0), 0);
+  const afterFees = totalReceipts - totalFees;
+  const totalInternal = DATA.internals.reduce((s,i) => s + i.amount_uah, 0);
+  const totalPaid = DATA.payouts.reduce((s,p) => s + p.amount_uah, 0);
+
+  const nodes = [
+    { icon:'💳', title:'WayForPay', amount: fmtCurrency(totalReceipts), label:'Оплати клієнтів' },
+    { icon:'🏢', title:'ФОП Полозовський', amount: fmtCurrency(afterFees), label:'Після комісії WFP' },
+    { icon:'🏢', title:'ФОП Лук\'яненко', amount: fmtCurrency(totalInternal), label:'Переказ на ФОП' },
+    { icon:'👤', title:'Особистий рахунок', amount: '', label:'Яско І.І.' },
+    { icon:'₿', title:'Крипто', amount: '', label:'USDT конвертація' },
+    { icon:'✅', title:'Виплата', amount: fmtCurrency(totalPaid), label:'Прилипкін А.' },
+  ];
+
+  document.getElementById('flowChain').innerHTML = nodes.map((n, i) => {
+    let html = `
+      <div class="flow-node">
+        <div class="flow-node-icon">${n.icon}</div>
+        <div class="flow-node-title">${n.title}</div>
+        <div class="flow-node-amount" style="color:var(--accent-light)">${n.amount}</div>
+        <div class="flow-node-label">${n.label}</div>
+      </div>
+    `;
+    if (i < nodes.length - 1) {
+      html += `<div class="flow-arrow"><div class="flow-arrow-line">→</div></div>`;
+    }
+    return html;
+  }).join('');
+}
+
+// ===================== RECEIPT CHART =====================
+let receiptChart;
+function renderReceiptChart() {
+  const receipts = filterByPeriod(DATA.receipts, 'receipt_date');
+
+  // Group by date
+  const byDate = {};
+  receipts.forEach(r => {
+    byDate[r.receipt_date] = (byDate[r.receipt_date] || 0) + r.amount_uah;
+  });
+
+  const labels = Object.keys(byDate).sort();
+  const values = labels.map(d => byDate[d]);
+
+  // Cumulative
+  let cum = 0;
+  const cumValues = values.map(v => { cum += v; return cum; });
+
+  const ctx = document.getElementById('receiptChart').getContext('2d');
+  if (receiptChart) receiptChart.destroy();
+
+  receiptChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels.map(d => { const dt = new Date(d); return dt.toLocaleDateString('uk-UA', {day:'numeric', month:'short'}); }),
+      datasets: [
+        {
+          label: 'Надходження',
+          data: values,
+          backgroundColor: 'rgba(99,102,241,0.6)',
+          borderColor: 'rgba(99,102,241,1)',
+          borderWidth: 1,
+          borderRadius: 6,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Накопичувальний',
+          data: cumValues,
+          type: 'line',
+          borderColor: 'rgba(34,197,94,0.8)',
+          backgroundColor: 'rgba(34,197,94,0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointBackgroundColor: '#22c55e',
+          borderWidth: 2,
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: true, labels: { color: '#8b90a0', font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: '#1a1d27',
+          borderColor: '#2a2e3d',
+          borderWidth: 1,
+          titleColor: '#e4e7ef',
+          bodyColor: '#8b90a0',
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${fmt(ctx.raw)} UAH`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(42,46,61,0.5)' }, ticks: { color: '#5a5f73', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(42,46,61,0.5)' }, ticks: { color: '#5a5f73', font: { size: 10 }, callback: v => fmt(v) }, position: 'left' },
+        y1: { grid: { display:false }, ticks: { color: '#22c55e', font: { size: 10 }, callback: v => fmt(v) }, position: 'right' },
+      }
+    }
+  });
+}
+
+// ===================== DEDUCTION CHART =====================
+let deductionChart;
+function renderDeductionChart() {
+  const byType = {};
+  DATA.deductions.forEach(d => {
+    byType[d.deduction_type] = (byType[d.deduction_type] || 0) + d.deduction_amount_uah;
+  });
+
+  const entries = Object.entries(byType).sort((a,b) => b[1]-a[1]);
+  const labels = entries.map(e => DEDUCTION_LABELS[e[0]] || e[0]);
+  const values = entries.map(e => e[1]);
+  const colors = entries.map(e => DEDUCTION_COLORS[e[0]] || '#666');
+
+  const ctx = document.getElementById('deductionChart').getContext('2d');
+  if (deductionChart) deductionChart.destroy();
+
+  deductionChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: colors, borderWidth: 0, hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'right', labels: { color: '#8b90a0', font: { size: 10 }, padding: 8, usePointStyle: true, pointStyleWidth: 8 } },
+        tooltip: {
+          backgroundColor: '#1a1d27', borderColor: '#2a2e3d', borderWidth: 1,
+          titleColor: '#e4e7ef', bodyColor: '#8b90a0',
+          callbacks: { label: (ctx) => `${ctx.label}: ${fmt(ctx.raw)} UAH (${(ctx.raw/values.reduce((a,b)=>a+b,0)*100).toFixed(1)}%)` }
+        }
+      }
+    }
+  });
+}
+
+// ===================== CONTOUR CHART =====================
+let contourChart;
+function renderContourChart() {
+  const contours = DATA.contour_balances.filter(c => c.total_receipts > 0 || Math.abs(c.balance) > 100);
+  const labels = contours.map(c => c.contour_name.replace('Игорь Иванович','І.І.').replace('Полозовский','Полоз.').replace('Лукьяненко','Лук.'));
+  const values = contours.map(c => c.balance);
+  const colors = values.map(v => v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)');
+
+  const ctx = document.getElementById('contourChart').getContext('2d');
+  if (contourChart) contourChart.destroy();
+
+  contourChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: colors, borderRadius: 6, borderSkipped: false }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d27', borderColor: '#2a2e3d', borderWidth: 1,
+          callbacks: { label: (ctx) => fmt(ctx.raw) + ' UAH' }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(42,46,61,0.5)' }, ticks: { color: '#5a5f73', font: { size: 10 }, callback: v => fmt(v) } },
+        y: { grid: { display: false }, ticks: { color: '#8b90a0', font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+// ===================== PAYOUTS LIST =====================
+function renderPayouts() {
+  const payouts = DATA.payouts.sort((a,b) => b.payout_date.localeCompare(a.payout_date));
+  document.getElementById('payoutList').innerHTML = payouts.map(p => {
+    const isCrypto = p.currency === 'USDT';
+    const icon = isCrypto ? '₿' : '💵';
+    const bg = isCrypto ? 'var(--orange-bg)' : 'var(--green-bg)';
+    const color = isCrypto ? 'var(--orange)' : 'var(--green)';
+    const dt = new Date(p.payout_date).toLocaleDateString('uk-UA', { day:'numeric', month:'short' });
+    return `
+      <div class="payout-item">
+        <div class="payout-item-left">
+          <div class="payout-icon" style="background:${bg};color:${color}">${icon}</div>
+          <div>
+            <div class="payout-desc">${dt} &middot; ${p.source_account_name || 'Рахунок'}</div>
+            <div class="payout-meta">${p.funding_type} &middot; ${p.status}</div>
+          </div>
+        </div>
+        <div>
+          <div class="payout-amount">${isCrypto ? fmt(p.amount)+' USDT' : fmt(p.amount_uah)+' UAH'}</div>
+          ${isCrypto ? `<div class="payout-amount-sub">${fmt(p.amount_uah)} UAH</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===================== RECEIPTS TABLE =====================
+function renderReceiptsTable() {
+  let receipts = filterByPeriod(DATA.receipts, 'receipt_date');
+
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  if (from) receipts = receipts.filter(r => r.receipt_date >= from);
+  if (to) receipts = receipts.filter(r => r.receipt_date <= to);
+
+  receipts.sort((a,b) => b.receipt_date.localeCompare(a.receipt_date));
+
+  document.getElementById('receiptCount').textContent = receipts.length;
+  document.getElementById('receiptBody').innerHTML = receipts.map(r => `
+    <tr>
+      <td style="color:var(--text-muted);font-size:11px">${r.receipt_id}</td>
+      <td class="date">${new Date(r.receipt_date).toLocaleDateString('uk-UA')}</td>
+      <td>${r.course_name}</td>
+      <td style="font-size:12px;color:var(--text-muted)">${r.contour_name}</td>
+      <td class="amount" style="color:var(--green)">${fmt(r.amount_uah)}</td>
+      <td class="amount" style="color:var(--red)">${r.wfp_fee_amount ? fmt(r.wfp_fee_amount) : '—'}</td>
+      <td><span class="status status-${r.status}">${r.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ===================== ACCRUALS TABLE =====================
+function renderAccrualsTable() {
+  const accruals = DATA.accruals.sort((a,b) => b.accrual_date.localeCompare(a.accrual_date));
+  document.getElementById('accrualCount').textContent = accruals.length;
+  document.getElementById('accrualBody').innerHTML = accruals.map(a => `
+    <tr>
+      <td style="color:var(--text-muted);font-size:11px">${a.accrual_id}</td>
+      <td class="date">${new Date(a.accrual_date).toLocaleDateString('uk-UA')}</td>
+      <td class="amount">${fmt(a.gross_amount)}</td>
+      <td class="amount" style="color:var(--orange)">${fmt(a.total_fees + a.total_wfp_fee)}</td>
+      <td class="amount" style="color:var(--red)">${fmt(a.total_deductions)}</td>
+      <td class="amount" style="color:var(--green)">${fmt(a.net_amount_uah)}</td>
+      <td><span class="status status-${a.status}">${a.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ===================== MULTI-OWNER URL PARAM =====================
+const urlParams = new URLSearchParams(window.location.search);
+const OWNER_ID = urlParams.get('owner') || 'OWN-002';
+const OWNER = DATA.owner_balances.find(o => o.owner_id === OWNER_ID) || DATA.owner_balances[1];
+
+// Update header with owner name
+document.querySelector('.header .subtitle').textContent =
+  `${OWNER.owner_name} (${OWNER_ID}) · AI Ковчег`;
+document.title = `Казначейство — ${OWNER.owner_name}`;
+
+// ===================== HERO BANNER =====================
+function renderHero() {
+  const own = OWNER;
+  const totalGross = own.total_gross;
+  const totalDeductions = own.total_deductions;
+  const totalNet = own.total_net;
+  const totalPaid = own.total_paid;
+
+  // Effective Fee Rate breakdown
+  const totalFeeWFP = DATA.deductions.filter(d => d.deduction_type === 'wfp_fee').reduce((s,d) => s + d.deduction_amount_uah, 0);
+  const totalServiceFee = DATA.deductions.filter(d => d.deduction_type === 'service_fee' || d.deduction_type === 'ops_service_fee').reduce((s,d) => s + d.deduction_amount_uah, 0);
+  const totalTaxes = DATA.deductions.filter(d => ['tax','military_tax','en_tax_luk','military_tax_luk'].includes(d.deduction_type)).reduce((s,d) => s + d.deduction_amount_uah, 0);
+  const totalOtherFees = totalDeductions - totalFeeWFP - totalServiceFee - totalTaxes;
+  const effectiveRate = totalGross > 0 ? ((totalDeductions / totalGross) * 100).toFixed(1) : '0';
+  const netRate = totalGross > 0 ? ((totalNet / totalGross) * 100).toFixed(1) : '0';
+
+  document.getElementById('heroBanner').innerHTML = `
+    <div class="hero-label">Тобі причитається</div>
+    <div class="hero-value">${fmtCurrency(own.balance_due)}</div>
+    <div class="hero-sub">З кожної ₴1 до тебе доходить <strong style="color:var(--green)">₴${(totalNet/totalGross).toFixed(2)}</strong> (${netRate}%) · Утримано ${effectiveRate}%</div>
+    <div class="hero-fee-bar">
+      <div class="hero-fee-item">
+        <div class="hero-fee-label">WFP</div>
+        <div class="hero-fee-value" style="color:var(--red)">${totalGross > 0 ? (totalFeeWFP/totalGross*100).toFixed(1) : 0}%</div>
+      </div>
+      <div class="hero-fee-item">
+        <div class="hero-fee-label">Сервіс</div>
+        <div class="hero-fee-value" style="color:var(--orange)">${totalGross > 0 ? (totalServiceFee/totalGross*100).toFixed(1) : 0}%</div>
+      </div>
+      <div class="hero-fee-item">
+        <div class="hero-fee-label">Податки</div>
+        <div class="hero-fee-value" style="color:var(--cyan)">${totalGross > 0 ? (totalTaxes/totalGross*100).toFixed(1) : 0}%</div>
+      </div>
+      <div class="hero-fee-item">
+        <div class="hero-fee-label">Інше</div>
+        <div class="hero-fee-value" style="color:var(--text-muted)">${totalGross > 0 ? (totalOtherFees/totalGross*100).toFixed(1) : 0}%</div>
+      </div>
+      <div class="hero-fee-item">
+        <div class="hero-fee-label" style="font-weight:600;color:var(--text)">Нетто</div>
+        <div class="hero-fee-value" style="color:var(--green)">${netRate}%</div>
+      </div>
+    </div>
+  `;
+}
+
+// ===================== ACTIVITY FEED =====================
+function renderFeed() {
+  const events = [];
+
+  // Collect all events
+  DATA.receipts.forEach(r => {
+    events.push({ type:'receipt', date: r.receipt_date, amount: r.amount_uah, text: `Надходження ${r.course_name}`, id: r.receipt_id });
+  });
+  DATA.payouts.forEach(p => {
+    const cur = p.currency === 'USDT' ? `${fmt(p.amount)} USDT` : '';
+    events.push({ type:'payout', date: p.payout_date, amount: p.amount_uah, text: `Виплата через ${p.source_account_name || 'рахунок'}`, id: p.payout_id, extra: cur });
+  });
+  DATA.internals.forEach(i => {
+    events.push({ type:'internal', date: i.operation_date, amount: i.amount_uah, text: `Переказ ${i.from_contour_name} → ${i.to_contour_name}`, id: i.internal_id });
+  });
+
+  // Sort by date desc, take last 10
+  events.sort((a,b) => b.date.localeCompare(a.date));
+  const recent = events.slice(0, 10);
+
+  const colorMap = { receipt: 'var(--green)', payout: 'var(--purple)', internal: 'var(--blue)' };
+  const signMap = { receipt: '+', payout: '-', internal: '↔' };
+
+  document.getElementById('feedList').innerHTML = recent.map(e => {
+    const dt = new Date(e.date);
+    const timeStr = dt.toLocaleDateString('uk-UA', { day:'numeric', month:'short' });
+    const color = colorMap[e.type];
+    const sign = signMap[e.type];
+    return `
+      <div class="feed-item">
+        <div class="feed-dot" style="background:${color}"></div>
+        <div class="feed-content">
+          <div class="feed-text">${e.text}</div>
+          <div class="feed-time">${timeStr} · ${e.id}</div>
+        </div>
+        <div class="feed-amount" style="color:${color}">${sign}${fmt(e.amount)} UAH</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===================== INIT =====================
+function renderAll() {
+  renderHero();
+  renderKPIs();
+  renderFeed();
+  renderFlow();
+  renderReceiptChart();
+  renderDeductionChart();
+  renderContourChart();
+  renderPayouts();
+  renderReceiptsTable();
+  renderAccrualsTable();
+}
+
+// Period buttons
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPeriod = btn.dataset.period;
+    renderAll();
+  });
+});
+
+// Date filters
+document.getElementById('dateFrom').addEventListener('change', renderReceiptsTable);
+document.getElementById('dateTo').addEventListener('change', renderReceiptsTable);
+
+// Go!
+renderAll();
+</script>
+</body>
+</html>
