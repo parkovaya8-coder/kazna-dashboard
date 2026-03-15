@@ -727,7 +727,7 @@
         <div class="subtitle">Прилипкін Антон (OWN-002) &middot; AI Ковчег</div>
       </div>
       <div class="owner-selector" id="ownerSelector">
-        <button class="owner-btn" id="ownerBtn" onclick="toggleOwnerDropdown()">
+        <button class="owner-btn" id="ownerBtn" onclick="toggleOwnerDropdown(event)">
           <div class="owner-avatar" id="ownerAvatar">А</div>
           <span id="ownerBtnName">Прилипкін Антон</span>
           <span class="owner-chevron">▼</span>
@@ -1261,7 +1261,8 @@ function buildOwnerDropdown() {
   </div>`;
 }
 
-function toggleOwnerDropdown() {
+function toggleOwnerDropdown(e) {
+  if (e) e.stopPropagation();
   const btn = document.getElementById('ownerBtn');
   const dd = document.getElementById('ownerDropdown');
   const isOpen = dd.classList.contains('open');
