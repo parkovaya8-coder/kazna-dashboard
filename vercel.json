@@ -1,0 +1,13 @@
+{
+  "rewrites": [
+    { "source": "/api/telegram", "destination": "/api/telegram" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    }
+  ]
+}
