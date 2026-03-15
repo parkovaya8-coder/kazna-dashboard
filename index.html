@@ -378,6 +378,46 @@
   .sync-btn.syncing svg { animation: syncSpin 1s linear infinite; }
   @keyframes syncSpin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
 
+  /* Owner Selector */
+  .owner-selector {
+    position:relative; display:inline-block;
+  }
+  .owner-btn {
+    background:var(--bg-card); border:1px solid var(--border); border-radius:10px;
+    color:var(--text); cursor:pointer; padding:8px 14px; display:flex;
+    align-items:center; gap:8px; font-family:inherit; font-size:13px;
+    font-weight:500; transition:all 0.2s; white-space:nowrap;
+  }
+  .owner-btn:hover { border-color:var(--accent); }
+  .owner-btn .owner-avatar {
+    width:24px; height:24px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:11px; font-weight:700; color:#fff;
+    background:var(--accent); flex-shrink:0;
+  }
+  .owner-btn .owner-chevron { font-size:10px; color:var(--text-muted); transition:transform 0.2s; }
+  .owner-btn.open .owner-chevron { transform:rotate(180deg); }
+  .owner-dropdown {
+    position:absolute; top:calc(100% + 6px); left:0; min-width:220px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:12px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.4); z-index:100;
+    overflow:hidden; display:none; animation:fadeUp 0.2s ease-out;
+  }
+  .owner-dropdown.open { display:block; }
+  .owner-option {
+    display:flex; align-items:center; gap:10px; padding:10px 14px;
+    cursor:pointer; transition:background 0.15s; font-size:13px;
+  }
+  .owner-option:hover { background:rgba(99,102,241,0.1); }
+  .owner-option.active { background:rgba(99,102,241,0.15); color:var(--accent); }
+  .owner-option .owner-avatar {
+    width:28px; height:28px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:12px; font-weight:700; color:#fff; flex-shrink:0;
+  }
+  .owner-option-info { flex:1; }
+  .owner-option-name { font-weight:600; }
+  .owner-option-balance { font-size:11px; color:var(--text-muted); }
+  .owner-option .check-mark { color:var(--accent); font-weight:700; }
+
   /* Badge */
   .badge {
     font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px;
@@ -685,6 +725,14 @@
       <div>
         <h1>Казначейство</h1>
         <div class="subtitle">Прилипкін Антон (OWN-002) &middot; AI Ковчег</div>
+      </div>
+      <div class="owner-selector" id="ownerSelector">
+        <button class="owner-btn" id="ownerBtn" onclick="toggleOwnerDropdown()">
+          <div class="owner-avatar" id="ownerAvatar">А</div>
+          <span id="ownerBtnName">Прилипкін Антон</span>
+          <span class="owner-chevron">▼</span>
+        </button>
+        <div class="owner-dropdown" id="ownerDropdown"></div>
       </div>
     </div>
     <div class="period-selector">
@@ -1165,14 +1213,103 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeDrillDown();
 });
 
-// ===================== MULTI-OWNER URL PARAM =====================
+// ===================== MULTI-OWNER =====================
 const urlParams = new URLSearchParams(window.location.search);
 let OWNER_ID = urlParams.get('owner') || 'OWN-002';
 let OWNER = DATA.owner_balances.find(o => o.owner_id === OWNER_ID) || DATA.owner_balances[1];
 
-document.querySelector('.header .subtitle').textContent =
-  `${OWNER.owner_name} (${OWNER_ID}) \u00b7 AI \u041a\u043e\u0432\u0447\u0435\u0433`;
-document.title = `\u041a\u0430\u0437\u043d\u0430\u0447\u0435\u0439\u0441\u0442\u0432\u043e \u2014 ${OWNER.owner_name}`;
+const OWNER_COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6'];
+
+function getOwnerInitials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+}
+
+function updateOwnerUI() {
+  document.querySelector('.header .subtitle').textContent =
+    `${OWNER.owner_name} (${OWNER_ID}) \u00b7 AI \u041a\u043e\u0432\u0447\u0435\u0433`;
+  document.title = `\u041a\u0430\u0437\u043d\u0430\u0447\u0435\u0439\u0441\u0442\u0432\u043e \u2014 ${OWNER.owner_name}`;
+  document.getElementById('ownerBtnName').textContent = OWNER.owner_name;
+  const avatar = document.getElementById('ownerAvatar');
+  const idx = DATA.owner_balances.findIndex(o => o.owner_id === OWNER_ID);
+  avatar.textContent = getOwnerInitials(OWNER.owner_name);
+  avatar.style.background = OWNER_COLORS[idx % OWNER_COLORS.length];
+}
+
+function buildOwnerDropdown() {
+  const dd = document.getElementById('ownerDropdown');
+  dd.innerHTML = DATA.owner_balances.map((o, i) => {
+    const active = o.owner_id === OWNER_ID ? ' active' : '';
+    const check = o.owner_id === OWNER_ID ? '<span class="check-mark">✓</span>' : '';
+    return `<div class="owner-option${active}" data-owner="${o.owner_id}" onclick="switchOwner('${o.owner_id}')">
+      <div class="owner-avatar" style="background:${OWNER_COLORS[i % OWNER_COLORS.length]}">${getOwnerInitials(o.owner_name)}</div>
+      <div class="owner-option-info">
+        <div class="owner-option-name">${o.owner_name}</div>
+        <div class="owner-option-balance">${fmt(o.balance_due)} UAH</div>
+      </div>
+      ${check}
+    </div>`;
+  }).join('');
+  // "All owners" option
+  dd.innerHTML += `<div class="owner-option${OWNER_ID === 'ALL' ? ' active' : ''}" onclick="switchOwner('ALL')" style="border-top:1px solid var(--border)">
+    <div class="owner-avatar" style="background:var(--text-muted)">∀</div>
+    <div class="owner-option-info">
+      <div class="owner-option-name">Всі власники</div>
+      <div class="owner-option-balance">${fmt(DATA.owner_balances.reduce((s,o)=>s+(o.balance_due||0),0))} UAH</div>
+    </div>
+    ${OWNER_ID === 'ALL' ? '<span class="check-mark">✓</span>' : ''}
+  </div>`;
+}
+
+function toggleOwnerDropdown() {
+  const btn = document.getElementById('ownerBtn');
+  const dd = document.getElementById('ownerDropdown');
+  const isOpen = dd.classList.contains('open');
+  dd.classList.toggle('open');
+  btn.classList.toggle('open');
+  if (!isOpen) buildOwnerDropdown();
+}
+
+function switchOwner(newOwnerId) {
+  document.getElementById('ownerDropdown').classList.remove('open');
+  document.getElementById('ownerBtn').classList.remove('open');
+
+  OWNER_ID = newOwnerId;
+  if (newOwnerId === 'ALL') {
+    // Aggregate all owners
+    OWNER = {
+      owner_id: 'ALL',
+      owner_name: 'Всі власники',
+      total_gross: DATA.owner_balances.reduce((s,o) => s + (o.total_gross||0), 0),
+      total_deductions: DATA.owner_balances.reduce((s,o) => s + (o.total_deductions||0), 0),
+      total_net: DATA.owner_balances.reduce((s,o) => s + (o.total_net||0), 0),
+      total_paid: DATA.owner_balances.reduce((s,o) => s + (o.total_paid||0), 0),
+      total_owner_expenses: DATA.owner_balances.reduce((s,o) => s + (o.total_owner_expenses||0), 0),
+      balance_due: DATA.owner_balances.reduce((s,o) => s + (o.balance_due||0), 0)
+    };
+  } else {
+    OWNER = DATA.owner_balances.find(o => o.owner_id === newOwnerId) || DATA.owner_balances[0];
+  }
+
+  // Update URL without reload
+  const url = new URL(window.location);
+  if (newOwnerId === 'ALL') url.searchParams.delete('owner');
+  else url.searchParams.set('owner', newOwnerId);
+  window.history.pushState({}, '', url);
+
+  updateOwnerUI();
+  renderAll();
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+  if (!document.getElementById('ownerSelector').contains(e.target)) {
+    document.getElementById('ownerDropdown').classList.remove('open');
+    document.getElementById('ownerBtn').classList.remove('open');
+  }
+});
+
+updateOwnerUI();
 
 // ===================== KPI CARDS =====================
 function renderKPIs() {

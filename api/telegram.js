@@ -6,6 +6,9 @@ const TG_API = `https://api.telegram.org/bot${TG_TOKEN}`;
 const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyMW-PW06ahc-V5p0OF1RS4ugm9IBHg5IeniDuGrrwIz0_1FXdJsUunUo544e-2OXD9yQ/exec';
 const DASHBOARD_URL = 'https://kazna-dashboard.vercel.app';
 
+// Per-user owner filter state (in-memory, resets on cold start)
+const userOwnerFilter = {};
+
 // ========== MAIN HANDLER ==========
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -13,7 +16,41 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { message } = req.body || {};
+    const body = req.body || {};
+
+    // Handle callback queries (inline keyboard buttons)
+    if (body.callback_query) {
+      const cb = body.callback_query;
+      const chatId = cb.message.chat.id;
+      const data = cb.data;
+
+      if (data.startsWith('owner:')) {
+        const ownerId = data.replace('owner:', '');
+        userOwnerFilter[chatId] = ownerId === 'ALL' ? null : ownerId;
+        const label = ownerId === 'ALL' ? 'Всі власники' : ownerId;
+
+        // Answer callback
+        await answerCallback(cb.id, `✅ Обрано: ${label}`);
+        // Delete the selector message
+        await deleteTgMessage(chatId, cb.message.message_id);
+        // Show balance for new owner
+        await cmdBalance(chatId);
+      } else if (data.startsWith('cmd:')) {
+        const cmd = data.replace('cmd:', '');
+        await answerCallback(cb.id);
+        await deleteTgMessage(chatId, cb.message.message_id);
+        if (cmd === 'balance') await cmdBalance(chatId);
+        else if (cmd === 'today') await cmdToday(chatId);
+        else if (cmd === 'week') await cmdPeriod(chatId, 7, 'тиждень');
+        else if (cmd === 'month') await cmdPeriod(chatId, 30, 'місяць');
+        else if (cmd === 'fees') await cmdFees(chatId);
+      }
+
+      return res.status(200).json({ ok: true });
+    }
+
+    // Handle regular messages
+    const { message } = body;
     if (!message || !message.text) {
       return res.status(200).json({ ok: true });
     }
@@ -25,6 +62,8 @@ module.exports = async (req, res) => {
     // Route commands
     if (text === '/start' || text === '/help') {
       await cmdStart(chatId, firstName);
+    } else if (text === '/owner' || text === '/власник') {
+      await cmdOwnerSelector(chatId);
     } else if (text === '/balance' || text === '/баланс') {
       await cmdBalance(chatId);
     } else if (text === '/today' || text === '/сьогодні') {
@@ -38,7 +77,9 @@ module.exports = async (req, res) => {
     } else if (text === '/payouts' || text === '/виплати') {
       await cmdPayouts(chatId);
     } else if (text === '/dashboard') {
-      await sendTg(chatId, `🌐 [Відкрити дашборд](${esc(DASHBOARD_URL)})`, 'MarkdownV2');
+      const ownerId = userOwnerFilter[chatId];
+      const url = ownerId ? `${DASHBOARD_URL}?owner=${ownerId}` : DASHBOARD_URL;
+      await sendTg(chatId, `🌐 [Відкрити дашборд](${esc(url)})`, 'MarkdownV2');
     } else {
       await sendTg(chatId, '🤔 Невідома команда. Натисніть /help для списку команд.');
     }
@@ -55,6 +96,7 @@ async function cmdStart(chatId, name) {
   const msg = `👋 Привіт, ${esc(name || 'друже')}\\!\n\n`
     + `🏦 Я бот *Казначейства*\\. Допоможу стежити за фінансами\\.\n\n`
     + `📊 Команди:\n`
+    + `/owner — 👤 Обрати власника\n`
     + `/balance — 💰 Баланс до виплати\n`
     + `/today — 📅 Надходження сьогодні\n`
     + `/week — 📆 За тиждень\n`
@@ -67,13 +109,45 @@ async function cmdStart(chatId, name) {
   await sendTg(chatId, msg, 'MarkdownV2');
 }
 
-async function cmdBalance(chatId) {
+async function cmdOwnerSelector(chatId) {
   const data = await fetchData();
   if (!data) { await sendTg(chatId, '❌ Помилка отримання даних'); return; }
 
-  const lines = ['💰 *Баланси власників:*\n'];
+  const currentFilter = userOwnerFilter[chatId] || null;
+  const emojis = ['🔵','🟡','🟢','🔴','🟣'];
 
-  for (const ob of data.owner_balances) {
+  const buttons = data.owner_balances.map((o, i) => {
+    const check = (currentFilter === o.owner_id) ? ' ✓' : '';
+    return [{
+      text: `${emojis[i % emojis.length]} ${o.owner_name} (${fmtMoney(o.balance_due)} UAH)${check}`,
+      callback_data: `owner:${o.owner_id}`
+    }];
+  });
+
+  // Add "All owners" option
+  const totalBalance = data.owner_balances.reduce((s,o) => s + (o.balance_due||0), 0);
+  const allCheck = !currentFilter ? ' ✓' : '';
+  buttons.push([{
+    text: `🌐 Всі власники (${fmtMoney(totalBalance)} UAH)${allCheck}`,
+    callback_data: 'owner:ALL'
+  }]);
+
+  await sendTgWithKeyboard(chatId, '👤 *Оберіть власника:*', buttons, 'MarkdownV2');
+}
+
+async function cmdBalance(chatId) {
+  const ownerId = userOwnerFilter[chatId] || null;
+  const data = await fetchData(ownerId);
+  if (!data) { await sendTg(chatId, '❌ Помилка отримання даних'); return; }
+
+  const filterLabel = ownerId ? data.owner_balances.find(o=>o.owner_id===ownerId)?.owner_name || ownerId : 'Всі';
+  const lines = [`💰 *Баланси* \\(${esc(filterLabel)}\\):\n`];
+
+  const owners = ownerId
+    ? data.owner_balances.filter(o => o.owner_id === ownerId)
+    : data.owner_balances;
+
+  for (const ob of owners) {
     if (!ob.owner_id) continue;
     const bal = ob.balance_due || 0;
     const emoji = bal >= 0 ? '🟢' : '🔴';
@@ -84,11 +158,17 @@ async function cmdBalance(chatId) {
     lines.push('');
   }
 
-  await sendTg(chatId, lines.join('\n'), 'MarkdownV2');
+  // Quick action buttons
+  const buttons = [
+    [{ text: '📅 Сьогодні', callback_data: 'cmd:today' }, { text: '📆 Тиждень', callback_data: 'cmd:week' }],
+    [{ text: '🗓 Місяць', callback_data: 'cmd:month' }, { text: '📉 Комісії', callback_data: 'cmd:fees' }]
+  ];
+
+  await sendTgWithKeyboard(chatId, lines.join('\n'), buttons, 'MarkdownV2');
 }
 
 async function cmdToday(chatId) {
-  const data = await fetchData();
+  const data = await fetchData(userOwnerFilter[chatId]);
   if (!data) { await sendTg(chatId, '❌ Помилка отримання даних'); return; }
 
   const today = new Date().toISOString().substring(0, 10);
@@ -113,7 +193,7 @@ async function cmdToday(chatId) {
 }
 
 async function cmdPeriod(chatId, days, label) {
-  const data = await fetchData();
+  const data = await fetchData(userOwnerFilter[chatId]);
   if (!data) { await sendTg(chatId, '❌ Помилка отримання даних'); return; }
 
   const now = new Date();
@@ -154,7 +234,7 @@ async function cmdPeriod(chatId, days, label) {
 }
 
 async function cmdFees(chatId) {
-  const data = await fetchData();
+  const data = await fetchData(userOwnerFilter[chatId]);
   if (!data) { await sendTg(chatId, '❌ Помилка отримання даних'); return; }
 
   const byType = {};
@@ -192,7 +272,7 @@ async function cmdFees(chatId) {
 }
 
 async function cmdPayouts(chatId) {
-  const data = await fetchData();
+  const data = await fetchData(userOwnerFilter[chatId]);
   if (!data) { await sendTg(chatId, '❌ Помилка отримання даних'); return; }
 
   const payouts = [...data.payouts].sort((a, b) =>
@@ -231,6 +311,55 @@ async function fetchData(owner) {
 }
 
 // ========== TELEGRAM API ==========
+
+async function sendTgWithKeyboard(chatId, text, buttons, parseMode) {
+  const payload = {
+    chat_id: chatId,
+    text: text,
+    disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: buttons }
+  };
+  if (parseMode) payload.parse_mode = parseMode;
+
+  try {
+    const resp = await fetch(`${TG_API}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const body = await resp.json();
+    if (!body.ok && parseMode) {
+      payload.parse_mode = undefined;
+      payload.text = text.replace(/\\([!._\-\[\](){}+=#|>~`])/g, '$1');
+      await fetch(`${TG_API}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+    return body;
+  } catch (err) { console.error('sendTgWithKeyboard error:', err); }
+}
+
+async function answerCallback(callbackId, text) {
+  try {
+    await fetch(`${TG_API}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callback_query_id: callbackId, text: text || '' })
+    });
+  } catch (err) { console.error('answerCallback error:', err); }
+}
+
+async function deleteTgMessage(chatId, messageId) {
+  try {
+    await fetch(`${TG_API}/deleteMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, message_id: messageId })
+    });
+  } catch (err) { console.error('deleteTgMessage error:', err); }
+}
 
 async function sendTg(chatId, text, parseMode) {
   const payload = {
